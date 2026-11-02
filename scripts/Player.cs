@@ -665,6 +665,7 @@ public partial class Player : CharacterBody2D, IDamageable
         if (_weaponVisual != null)
         {
             _weaponVisual.Visible = IsRangedActive;
+            if (!IsMeleeActive) _meleeVisual?.Cancel();
             // CDDA 素材：按物品 id 换枪贴图（weapons_cdda/<id>.png，纯枪不带手）
             _weaponVisual.SetGunItem(IsRangedActive ? ActiveWeaponItem?.Data?.Id : null);
         }
@@ -778,6 +779,7 @@ public partial class Player : CharacterBody2D, IDamageable
 
     /// <summary>武器叠层（枪 + 枪口火焰）。</summary>
     private WeaponVisual _weaponVisual;
+    private MeleeVisual _meleeVisual;
     private float _animTime;
     private string _animDir = "";
     private string _animName = "";
@@ -813,6 +815,10 @@ public partial class Player : CharacterBody2D, IDamageable
 
         _weaponVisual = new WeaponVisual { Name = "WeaponVisual" };
         AddChild(_weaponVisual);
+
+        // 近战挥动层：平时不可见，攻击时才画
+        _meleeVisual = new MeleeVisual { Name = "MeleeVisual" };
+        AddChild(_meleeVisual);
     }
 
     private void SetPlayerAnim(string direction, string action, bool oneShot = false)
@@ -949,11 +955,13 @@ public partial class Player : CharacterBody2D, IDamageable
 
         // ★ 挥拳动画只在**真正出手那一帧**播。
         //   放在按键判断外会每帧重置，导致 _animTime 永远归零、画面卡在第 0 帧。
-        if (!_uiBlocking && Input.IsActionJustPressed("shoot"))
+        if (!_uiBlocking && Input.IsActionJustPressed("shoot") && _meleeWeapon.IsReady)
         {
             FaceAim(aimDir);                        // ★ 转向攻击方向
             PlayPunch();
             _meleeWeapon.TryAttack(GlobalPosition, aimDir);
+            // 视觉挥动：角度/半径直接取判定用的同一组参数，保证"看得见的地方都有判定"
+            _meleeVisual?.PlaySwing(aimDir, _meleeWeapon.MeleeData.Reach, _meleeWeapon.MeleeData.HalfArcRadians);
         }
     }
 
