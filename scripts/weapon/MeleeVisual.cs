@@ -10,8 +10,8 @@ using Godot;
 /// </summary>
 public partial class MeleeVisual : Node2D
 {
-    /// <summary>一次挥动的时长（秒）。默认与 <see cref="MeleeWeapon.SwingVisualTime"/> 一致。</summary>
-    [Export] public float SwingTime { get; set; } = 0.15f;
+    /// <summary>本次挥动的时长（秒），由调用方按攻速换算后传入。</summary>
+    public float SwingTime { get; private set; } = 0.15f;
 
     /// <summary>刀身贴图相对目标长度的缩放（32px 图标 → 世界像素）。</summary>
     [Export] public float BladeScale { get; set; } = 1.5f;
@@ -42,8 +42,8 @@ public partial class MeleeVisual : Node2D
         Visible = false;
     }
 
-    /// <summary>开始一次挥动：从 aimDir-半弧 扫到 aimDir+半弧。</summary>
-    public void PlaySwing(Vector2 aimDir, float reach, float halfArcRadians)
+    /// <summary>开始一次挥动：从 aimDir-半弧 扫到 aimDir+半弧（duration 秒）。</summary>
+    public void PlaySwing(Vector2 aimDir, float reach, float halfArcRadians, float duration)
     {
         if (_blade?.Texture == null) return;
 
@@ -53,7 +53,8 @@ public partial class MeleeVisual : Node2D
         _from = center - halfArcRadians;
         _to = center + halfArcRadians;
         _mirror = dir.X < 0.0f;
-        _left = Mathf.Max(SwingTime, 0.01f);
+        SwingTime = Mathf.Max(duration, 0.01f);
+        _left = SwingTime;
 
         // 刀尖落在 reach 上：中心距 = reach - 半个刀长
         float halfLen = _blade.Texture.GetSize().X * BladeScale * 0.5f;

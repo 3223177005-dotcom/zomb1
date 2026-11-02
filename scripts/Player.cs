@@ -780,6 +780,9 @@ public partial class Player : CharacterBody2D, IDamageable
     /// <summary>武器叠层（枪 + 枪口火焰）。</summary>
     private WeaponVisual _weaponVisual;
     private MeleeVisual _meleeVisual;
+
+    /// <summary>挥动时长 = 攻击冷却 × 这个比例（0.7 ≈ 冷却的 70%）。</summary>
+    [Export] public float MeleeSwingRatio { get; set; } = 0.7f;
     private float _animTime;
     private string _animDir = "";
     private string _animName = "";
@@ -886,7 +889,12 @@ public partial class Player : CharacterBody2D, IDamageable
 
         bool flip = false;
         string direction;
-        if (Mathf.Abs(_lastDir.X) >= Mathf.Abs(_lastDir.Y)) { direction = "side"; flip = _lastDir.X < 0.0f; }
+        if (Mathf.Abs(_lastDir.X) >= Mathf.Abs(_lastDir.Y))
+        {
+            direction = "side";
+            // side_* 贴图原生朝左，所以**朝右时**才镜像（之前写反了，导致向左走显示成朝右）
+            flip = _lastDir.X > 0.0f;
+        }
         else direction = _lastDir.Y > 0.0f ? "down" : "up";
 
         // ★ 挥拳中：播一次性攻击动画
@@ -959,9 +967,14 @@ public partial class Player : CharacterBody2D, IDamageable
         {
             FaceAim(aimDir);                        // ★ 转向攻击方向
             PlayPunch();
+            // 挥动时长按攻速换算：冷却 × MeleeSwingRatio，钳在 0.12~0.5 秒
+            var md = _meleeWeapon.MeleeData;
+            float swingTime = Mathf.Clamp(md.Cooldown * MeleeSwingRatio, 0.12f, 0.5f);
+            _meleeWeapon.SwingVisualTime = swingTime;   // 轨迹弧与刀同步
+
             _meleeWeapon.TryAttack(GlobalPosition, aimDir);
-            // 视觉挥动：角度/半径直接取判定用的同一组参数，保证"看得见的地方都有判定"
-            _meleeVisual?.PlaySwing(aimDir, _meleeWeapon.MeleeData.Reach, _meleeWeapon.MeleeData.HalfArcRadians);
+            // 视觉挥动：角度/半径取判定用的同一组参数，保证"看得见的地方都有判定"
+            _meleeVisual?.PlaySwing(aimDir, md.Reach, md.HalfArcRadians, swingTime);
         }
     }
 
