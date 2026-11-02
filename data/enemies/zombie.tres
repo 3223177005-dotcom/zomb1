@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemy/EnemyData.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+EnemyName = "丧尸"
+MaxHealth = 60.0
+MoveSpeed = 120.0
+Damage = 10.0
+AttackRange = 40.0
+AttackCooldown = 1.0
+VisionRange = 600.0
+HearingRange = 500.0

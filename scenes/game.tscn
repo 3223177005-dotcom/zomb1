@@ -1,0 +1,41 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/crosshair.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/zombie.tscn" id="4"]
+[ext_resource type="Script" path="res://scripts/Game.cs" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/equipment_panel.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/ground_panel.tscn" id="7"]
+[ext_resource type="Script" path="res://scripts/world/GroundItemsLayer.cs" id="8"]
+
+[node name="Game" type="Node2D"]
+script = ExtResource("5")
+
+[node name="Terrain" type="TileMapLayer" parent="."]
+
+[node name="GroundItemsLayer" type="Node2D" parent="."]
+script = ExtResource("8")
+
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector2(0, 0)
+
+[node name="Zombie1" parent="." instance=ExtResource("4")]
+position = Vector2(300, 120)
+
+[node name="Zombie2" parent="." instance=ExtResource("4")]
+position = Vector2(-300, 120)
+
+[node name="Zombie3" parent="." instance=ExtResource("4")]
+position = Vector2(300, -120)
+
+[node name="Zombie4" parent="." instance=ExtResource("4")]
+position = Vector2(-300, -120)
+
+[node name="Crosshair" parent="." instance=ExtResource("2")]
+
+[node name="HUD" parent="." instance=ExtResource("3")]
+
+[node name="EquipmentPanel" parent="." instance=ExtResource("6")]
+
+[node name="GroundPanel" parent="." instance=ExtResource("7")]

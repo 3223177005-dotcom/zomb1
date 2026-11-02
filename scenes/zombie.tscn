@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemy/Enemy.cs" id="1"]
+[ext_resource type="Resource" path="res://data/enemies/zombie.tres" id="2"]
+
+[sub_resource type="RectangleShape2D" id="body_shape"]
+size = Vector2(28, 28)
+
+[node name="Zombie" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 7
+script = ExtResource("1")
+EnemyData = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("body_shape")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+color = Color(0.8, 0.25, 0.25, 1)
+polygon = PackedVector2Array(-7, -7, 7, -7, 7, 7, -7, 7)
+
+[node name="Nose" type="Polygon2D" parent="Visual"]
+color = Color(0.5, 0.1, 0.1, 1)
+polygon = PackedVector2Array(6, -4, 6, 4, 12, 0)

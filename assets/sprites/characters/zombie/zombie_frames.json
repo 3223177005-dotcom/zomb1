@@ -1,0 +1,86 @@
+{
+  "Down": {
+    "First-Attack": {
+      "file": "down_first_attack.png",
+      "frame_h": 23,
+      "frame_w": 16,
+      "frames": 7
+    },
+    "Idle": {
+      "file": "down_idle.png",
+      "frame_h": 23,
+      "frame_w": 16,
+      "frames": 6
+    },
+    "Second-Attack": {
+      "file": "down_second_attack.png",
+      "frame_h": 23,
+      "frame_w": 16,
+      "frames": 9
+    },
+    "Walk": {
+      "file": "down_walk.png",
+      "frame_h": 23,
+      "frame_w": 16,
+      "frames": 8
+    }
+  },
+  "Side": {
+    "First-Attack": {
+      "file": "side_first_attack.png",
+      "frame_h": 27,
+      "frame_w": 27,
+      "frames": 7
+    },
+    "First-Death": {
+      "file": "side_first_death.png",
+      "frame_h": 27,
+      "frame_w": 27,
+      "frames": 6
+    },
+    "Idle": {
+      "file": "side_idle.png",
+      "frame_h": 27,
+      "frame_w": 27,
+      "frames": 6
+    },
+    "Second-Attack": {
+      "file": "side_second_attack.png",
+      "frame_h": 27,
+      "frame_w": 27,
+      "frames": 9
+    },
+    "Walk": {
+      "file": "side_walk.png",
+      "frame_h": 27,
+      "frame_w": 27,
+      "frames": 8
+    }
+  },
+  "Up": {
+    "First-Attack": {
+      "file": "up_first_attack.png",
+      "frame_h": 25,
+      "frame_w": 14,
+      "frames": 7
+    },
+    "Idle": {
+      "file": "up_idle.png",
+      "frame_h": 25,
+      "frame_w": 14,
+      "frames": 6
+    },
+    "Second-Attack": {
+      "file": "up_second_attack.png",
+      "frame_h": 25,
+      "frame_w": 14,
+      "frames": 9
+    },
+    "Walk": {
+      "file": "up_walk.png",
+      "frame_h": 25,
+      "frame_w": 14,
+      "frames": 8
+    }
+  }
+}

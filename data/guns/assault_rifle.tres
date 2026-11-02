@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="GunData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon/GunData.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+GunName = "突击步枪"
+Damage = 25.0
+FireRate = 8.0
+MagazineSize = 30
+ReloadTime = 2.0
+BulletRange = 600.0
+NoiseRadius = 250.0
+SupportedModes = 11
+DefaultMode = 1
+BurstCount = 3
+BurstCooldown = 0.0
+AimTime = 0.25
+HipSpread = 6.0
+AimSpread = 1.5
+MoveSpreadBonus = 4.0
+SprintSpreadBonus = 10.0
+SpreadRecovery = 10.0

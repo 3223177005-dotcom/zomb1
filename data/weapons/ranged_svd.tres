@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RangedWeaponData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/item/RangedWeaponData.cs" id="1"]
+[ext_resource type="Resource" path="res://data/guns/svd.tres" id="2"]
+[ext_resource type="Script" path="res://scripts/item/WeaponSlotData.cs" id="3"]
+
+[sub_resource type="Resource" id="slot_scope"]
+script = ExtResource("3")
+SlotType = "scope"
+Capacity = 1
+
+[sub_resource type="Resource" id="slot_muzzle"]
+script = ExtResource("3")
+SlotType = "muzzle"
+Capacity = 1
+
+[sub_resource type="Resource" id="slot_extended_mag"]
+script = ExtResource("3")
+SlotType = "extended_mag"
+Capacity = 1
+
+[resource]
+script = ExtResource("1")
+MoveSpeedMultiplier = 0.9
+GunStats = ExtResource("2")
+Slots = Array[Resource]([SubResource("slot_scope"), SubResource("slot_muzzle"), SubResource("slot_extended_mag")])

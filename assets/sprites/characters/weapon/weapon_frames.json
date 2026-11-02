@@ -1,0 +1,86 @@
+{
+  "down": {
+    "idle": {
+      "file": "down_idle.png",
+      "frames": 6,
+      "fw": 16,
+      "fh": 17
+    },
+    "shoot": {
+      "file": "down_shoot.png",
+      "frames": 3,
+      "fw": 16,
+      "fh": 17
+    },
+    "reload": {
+      "file": "down_reload.png",
+      "frames": 8,
+      "fw": 16,
+      "fh": 17
+    },
+    "fire": {
+      "file": "down_fire.png",
+      "frames": 3,
+      "fw": 16,
+      "fh": 17
+    }
+  },
+  "up": {
+    "idle": {
+      "file": "up_idle.png",
+      "frames": 6,
+      "fw": 22,
+      "fh": 19
+    },
+    "shoot": {
+      "file": "up_shoot.png",
+      "frames": 3,
+      "fw": 22,
+      "fh": 19
+    },
+    "reload": {
+      "file": "up_reload.png",
+      "frames": 8,
+      "fw": 22,
+      "fh": 19
+    },
+    "fire": {
+      "file": "up_fire.png",
+      "frames": 3,
+      "fw": 22,
+      "fh": 19
+    }
+  },
+  "side": {
+    "idle": {
+      "file": "side_idle.png",
+      "frames": 6,
+      "fw": 20,
+      "fh": 11
+    },
+    "shoot": {
+      "file": "side_shoot.png",
+      "frames": 3,
+      "fw": 20,
+      "fh": 11
+    },
+    "reload": {
+      "file": "side_reload.png",
+      "frames": 8,
+      "fw": 20,
+      "fh": 11
+    },
+    "death": {
+      "file": "side_death.png",
+      "frames": 6,
+      "fw": 20,
+      "fh": 11
+    },
+    "fire": {
+      "file": "side_fire.png",
+      "frames": 3,
+      "fw": 20,
+      "fh": 11
+    }
+  }
+}

@@ -1,0 +1,191 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/EquipmentPanel.cs" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="panel_bg"]
+bg_color = Color(0.07, 0.08, 0.1, 0.95)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.4, 0.42, 0.48, 1)
+
+[sub_resource type="StyleBoxFlat" id="region"]
+bg_color = Color(0.1, 0.11, 0.14, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.26, 0.28, 0.33, 1)
+
+[sub_resource type="StyleBoxFlat" id="slot_normal"]
+bg_color = Color(0.14, 0.15, 0.18, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.45, 0.47, 0.53, 1)
+
+[sub_resource type="StyleBoxFlat" id="slot_hover"]
+bg_color = Color(0.2, 0.22, 0.26, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.7, 0.72, 0.8, 1)
+
+[sub_resource type="StyleBoxFlat" id="slot_pressed"]
+bg_color = Color(0.26, 0.28, 0.33, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.9, 0.9, 0.95, 1)
+
+[node name="EquipmentPanel" type="CanvasLayer"]
+layer = 6
+script = ExtResource("1")
+
+[node name="Root" type="Panel" parent="."]
+anchor_left = 0.08
+anchor_top = 0.06
+anchor_right = 0.92
+anchor_bottom = 0.94
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("panel_bg")
+
+[node name="Margin" type="MarginContainer" parent="Root"]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Columns" type="HBoxContainer" parent="Root/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Left" type="VBoxContainer" parent="Root/Margin/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.25
+theme_override_constants/separation = 12
+
+[node name="HealthRegion" type="PanelContainer" parent="Root/Margin/Columns/Left"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("region")
+
+[node name="EquipRegion" type="PanelContainer" parent="Root/Margin/Columns/Left"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("region")
+
+[node name="EquipMargin" type="MarginContainer" parent="Root/Margin/Columns/Left/EquipRegion"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="EquipBox" type="VBoxContainer" parent="Root/Margin/Columns/Left/EquipRegion/EquipMargin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Root/Margin/Columns/Left/EquipRegion/EquipMargin/EquipBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.72, 0.78, 1)
+theme_override_font_sizes/font_size = 22
+text = "装备"
+
+[node name="Slots" type="HBoxContainer" parent="Root/Margin/Columns/Left/EquipRegion/EquipMargin/EquipBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Slot1" type="Button" parent="Root/Margin/Columns/Left/EquipRegion/EquipMargin/EquipBox/Slots"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(88, 68)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_font_sizes/font_size = 17
+theme_override_styles/focus = SubResource("slot_normal")
+theme_override_styles/normal = SubResource("slot_normal")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_pressed")
+text = "[1] —"
+
+[node name="Slot2" type="Button" parent="Root/Margin/Columns/Left/EquipRegion/EquipMargin/EquipBox/Slots"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(88, 68)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_font_sizes/font_size = 17
+theme_override_styles/focus = SubResource("slot_normal")
+theme_override_styles/normal = SubResource("slot_normal")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_pressed")
+text = "[2] —"
+
+[node name="Slot3" type="Button" parent="Root/Margin/Columns/Left/EquipRegion/EquipMargin/EquipBox/Slots"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(88, 68)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_font_sizes/font_size = 17
+theme_override_styles/focus = SubResource("slot_normal")
+theme_override_styles/normal = SubResource("slot_normal")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_pressed")
+text = "[3] —"
+
+[node name="Right" type="VBoxContainer" parent="Root/Margin/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.6
+theme_override_constants/separation = 8
+
+[node name="BagRegion" type="PanelContainer" parent="Root/Margin/Columns/Right"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("region")
+
+[node name="BagMargin" type="MarginContainer" parent="Root/Margin/Columns/Right/BagRegion"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="BagBox" type="VBoxContainer" parent="Root/Margin/Columns/Right/BagRegion/BagMargin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Root/Margin/Columns/Right/BagRegion/BagMargin/BagBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.72, 0.78, 1)
+theme_override_font_sizes/font_size = 22
+text = "身上带的物品"
+
+[node name="BagScroll" type="ScrollContainer" parent="Root/Margin/Columns/Right/BagRegion/BagMargin/BagBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="BagList" type="VBoxContainer" parent="Root/Margin/Columns/Right/BagRegion/BagMargin/BagBox/BagScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="BagTotal" type="Label" parent="Root/Margin/Columns/Right/BagRegion/BagMargin/BagBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.64, 0.7, 1)
+theme_override_font_sizes/font_size = 15

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="GunData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon/GunData.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+GunName = "SVD"
+Damage = 50.0
+FireRate = 3.5
+MagazineSize = 10
+ReloadTime = 3.2
+BulletRange = 1800.0
+NoiseRadius = 840.0
+Caliber = "ammo_762x54r"
+SupportedModes = 2
+DefaultMode = 2
+BurstCount = 3
+BurstCooldown = 0.0
+AimTime = 0.3
+HipSpread = 14.0
+AimSpread = 0.3
+MoveSpreadBonus = 4.0
+SprintSpreadBonus = 16.0
+SpreadRecovery = 6.0

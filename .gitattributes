@@ -1,0 +1,24 @@
+# 文本统一 LF（Godot 的 .tscn/.tres 用 LF 更稳）
+* text=auto eol=lf
+
+# 明确按文本处理
+*.cs      text
+*.csproj  text
+*.tscn    text
+*.tres    text
+*.godot   text
+*.json    text
+*.md      text
+*.py      text
+
+# 二进制素材：不做行尾转换、不尝试 diff
+*.png     binary
+*.jpg     binary
+*.ttf     binary
+*.ttc     binary
+*.otf     binary
+*.wav     binary
+*.ogg     binary
+*.pck     binary
+*.zip     binary
+*.exe     binary

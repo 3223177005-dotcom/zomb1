@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AttachmentData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/item/AttachmentData.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/item/AttachmentModifier.cs" id="2"]
+
+[sub_resource type="Resource" id="mod_mag"]
+script = ExtResource("2")
+StatName = "magazine_size"
+Addend = 10.0
+Multiplier = 1.0
+
+[resource]
+script = ExtResource("1")
+SlotType = "extended_mag"
+Modifiers = Array[Resource]([SubResource("mod_mag")])

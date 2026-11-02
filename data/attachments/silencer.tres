@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="AttachmentData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/item/AttachmentData.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/item/AttachmentModifier.cs" id="2"]
+
+[sub_resource type="Resource" id="mod_silence"]
+script = ExtResource("2")
+StatName = "silence"
+Addend = -20.0
+Multiplier = 1.0
+
+[sub_resource type="Resource" id="mod_inaccuracy"]
+script = ExtResource("2")
+StatName = "inaccuracy"
+Addend = 0.0
+Multiplier = 1.1
+
+[resource]
+script = ExtResource("1")
+SlotType = "muzzle"
+Modifiers = Array[Resource]([SubResource("mod_silence"), SubResource("mod_inaccuracy")])
