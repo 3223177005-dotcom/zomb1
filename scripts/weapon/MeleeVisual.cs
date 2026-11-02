@@ -24,7 +24,6 @@ public partial class MeleeVisual : Node2D
     private float _from;
     private float _to;
     private float _radius;
-    private bool _mirror;
 
     /// <summary>是否正在挥。</summary>
     public bool Swinging => _left > 0.0f;
@@ -52,7 +51,6 @@ public partial class MeleeVisual : Node2D
 
         _from = center - halfArcRadians;
         _to = center + halfArcRadians;
-        _mirror = dir.X < 0.0f;
         SwingTime = Mathf.Max(duration, 0.01f);
         _left = SwingTime;
 
@@ -93,9 +91,10 @@ public partial class MeleeVisual : Node2D
         var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
 
         _blade.Position = dir * _radius;
+        // 只用旋转定位：图标本身斜 45°，加偏移后刀身始终沿半径朝外。
+        // 不再做竖直镜像 —— 镜像会把斜放的图标翻成另一个角度（朝左时看起来「刀尖朝后」）。
         _blade.Rotation = a + BladeAngleOffset;
-        // 朝左时竖直镜像，避免刀背朝上/刀刃朝上颠倒
-        _blade.Scale = new Vector2(BladeScale, _mirror ? -BladeScale : BladeScale);
+        _blade.Scale = new Vector2(BladeScale, BladeScale);
         _blade.ZIndex = 1;
     }
 }
