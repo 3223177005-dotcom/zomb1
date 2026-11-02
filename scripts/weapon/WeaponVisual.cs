@@ -113,7 +113,8 @@ public partial class WeaponVisual : Node2D
 
         _flash.FlipH = false;
         _flash.Offset = new Vector2(6.0f, 0.0f);
-        // 火焰贴图前几帧的火根不在最左侧，往枪管里压 3px 才贴住枪口\n        _flash.Position = _cddaMuzzle - new Vector2(3.0f + _recoil, 0.0f);
+        // 火焰贴图前几帧的火根不在最左侧，往枪管里压 3px 才贴住枪口
+        _flash.Position = _cddaMuzzle - new Vector2(3.0f + _recoil, 0.0f);
     }
 
     /// <summary>
@@ -316,7 +317,8 @@ public partial class WeaponVisual : Node2D
             if (_gun != null)
             {
                 _gun.Position = new Vector2(-_recoil, 0.0f);
-                // 火焰贴图前几帧的火根不在最左侧，往枪管里压 3px 才贴住枪口\n        _flash.Position = _cddaMuzzle - new Vector2(3.0f + _recoil, 0.0f);
+                // 火焰贴图前几帧的火根不在最左侧，往枪管里压 3px 才贴住枪口
+        _flash.Position = _cddaMuzzle - new Vector2(3.0f + _recoil, 0.0f);
             }
             return;
         }
