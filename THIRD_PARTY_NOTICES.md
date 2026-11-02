@@ -16,7 +16,7 @@
   另含 Dungeon Crawl: Stone Soup 的 CC0 图块
 - **许可**：**CC BY-SA 3.0**（<https://creativecommons.org/licenses/by-sa/3.0/>）
 - **本项目做的修改**：从整张图集按 `tile_config.json` 的索引裁出 32×32，
-  并按本项目的物品 id 重命名（例如 `bandages` → `bandage.png`、`mosin91_30` → `svd.png`）。
+  并按本项目的物品 id 重命名（例如 `bandages` → `bandage.png`、`overlay_wielded_rifle_308` → `svd.png`（与手持武器同一张图））。
   **这些裁切/重命名后的图标按 CC BY-SA 3.0 分发。**
 - **署名要求**：分发时必须保留本文件或等效的署名说明，并注明许可与修改。
 
