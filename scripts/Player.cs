@@ -892,8 +892,8 @@ public partial class Player : CharacterBody2D, IDamageable
         if (Mathf.Abs(_lastDir.X) >= Mathf.Abs(_lastDir.Y))
         {
             direction = "side";
-            // side_* 贴图原生朝左，所以**朝右时**才镜像（之前写反了，导致向左走显示成朝右）
-            flip = _lastDir.X > 0.0f;
+            // side_* 贴图原生**朝右**（实测：脸在右半边、头发在左），所以向左走时镜像
+            flip = _lastDir.X < 0.0f;
         }
         else direction = _lastDir.Y > 0.0f ? "down" : "up";
 
