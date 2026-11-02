@@ -365,10 +365,13 @@ public partial class Game : Node2D
     /// <summary>房间箱子的贴图（4 种轮流用）。</summary>
     private static readonly string[] ChestSprites =
     {
-        "res://assets/sprites/objects/chest_fridge.png",   // 冰箱
-        "res://assets/sprites/objects/chest_tc1.png",      // 圆金属垃圾桶
-        "res://assets/sprites/objects/chest_tc2.png",      // 方金属垃圾桶
-        "res://assets/sprites/objects/chest_fridge.png",   // 冰箱（4 个房间轮换）
+        // 32×32 原生（MSX）：垃圾桶 / 垃圾箱 —— 1:1 显示，不再 ×2
+        "res://assets/sprites/objects32/chest_trashcan.png",   // 圆金属垃圾桶
+        "res://assets/sprites/objects32/chest_dumpster.png",   // 方金属垃圾桶
+        // ⚠ 冰箱：MSX 的 f_fridge / f_fridge_o 图块为空（0 个非透明像素），无可用原生图，
+        //   暂留旧 16×16 贴图（仍 ×2）。见 docs/03 §2 与 THIRD_PARTY_NOTICES。
+        "res://assets/sprites/objects/chest_fridge.png",   // 冰箱（旧 16px）
+        "res://assets/sprites/objects32/chest_locker.png", // 储物柜（32×32 原生，替代第二个冰箱位）
     };
 
     /// <summary>在某个格子上放一张箱子贴图（底部居中，占满一格）。</summary>
@@ -380,8 +383,8 @@ public partial class Game : Node2D
 
         var centre = Grid.CellToWorld(cell) + new Vector2(CellSize * 0.5f, CellSize * 0.5f);
 
-        // 容器贴图是 16px 时代的：世界格已是 32px，这里 2× 放大并重新按"可视化高度"贴底
-        const float chestScale = 2.0f;
+        // 32×32 原生贴图 1:1；仍是 16px 的（目前只有冰箱）才 ×2
+        float chestScale = tex.GetHeight() >= 32 ? 1.0f : 2.0f;
         float drawHeight = tex.GetHeight() * chestScale;
 
         var sprite = new Sprite2D

@@ -419,14 +419,14 @@ public partial class Enemy : CharacterBody2D, IDamageable
 		var game = GetTree().GetFirstNodeInGroup("game") as Game;
 		if (game?.Grid == null) return;
 
-		var tex = GD.Load<Texture2D>("res://assets/sprites/objects/corpse_axe.png");
+		var tex = GD.Load<Texture2D>("res://assets/sprites/objects32/corpse.png");
 		if (tex == null) return;
 
 		var cell = game.Grid.WorldToCell(GlobalPosition);
 		var centre = game.Grid.CellToWorld(cell) + Vector2.One * (Game.CellSize * 0.5f);
 
 		// 尸体贴图是 16px 时代的：世界格 32px，2× 放大并按可视化高度贴底
-		const float corpseScale = 2.0f;
+		float corpseScale = tex.GetHeight() >= 32 ? 1.0f : 2.0f;
 		float drawHeight = tex.GetHeight() * corpseScale;
 
 		var corpse = new Sprite2D

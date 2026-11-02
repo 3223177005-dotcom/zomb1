@@ -54,7 +54,19 @@
   游戏内 2× 最近邻放大显示。**裁切后的贴图按 CC BY-SA 3.0 分发。**
 - **复现**：`tools/extract_cdda_weapon.py`
 
-## 5. 其它
+## 5. 容器 / 尸体贴图（32×32）：MSX++UnDeadPeopleEdition
+
+- **文件**：`assets/sprites/objects32/*.png`（8 张）
+- **来源**：同一 BN 仓库 `gfx/MSX++UnDeadPeopleEdition/`
+  （`f_fridge` 与 `f_*` 家具在 `normal_furniture.png`/`large_stuff.png`/`normal_offset.png`；`corpse_generic_male` 在 `normal_items.png`）
+- **用到的 CDDA id**：`f_fridge`、`f_trashcan`、`f_dumpster`、`f_crate_c`、`f_cardboard_box`、
+  `f_safe_c`、`f_locker`、`corpse_generic_male`
+- **许可**：**CC BY-SA 3.0**
+- **本项目做的修改**：按全局图块索引裁出 32×32 单元（不裁 bbox，保留原画布），把 fg 合成到 bg 上。
+- **例外**：`f_fridge` / `f_fridge_o` 在包内图块为**空**（0 个非透明像素），冰箱仍用旧 16×16 自绘贴图（`objects/chest_fridge.png`，代码里按图高自动 ×2）。
+- **复现**：`tools/extract_cdda_props.py`
+
+## 6. 其它
 
 - 游戏代码、场景、地形图集、角色/武器帧图：本项目自制（`assets/sprites/tiles/`、
   `characters/`，地形图集由 16px 版 2× 放大而来）。
