@@ -70,7 +70,12 @@
 
 - 游戏代码、场景、地形图集、角色/武器帧图：本项目自制（`assets/sprites/tiles/`、
   `characters/`，地形图集由 16px 版 2× 放大而来）。
-- 字体：`assets/fonts/NotoSansSC.ttf`（**Noto Sans SC**，SIL Open Font License 1.1，可自由再分发）。
+- 字体：
+  - `assets/fonts/FusionPixel12.ttf`（**缝合像素字体 / Fusion Pixel Font**，12px 比例版简体中文，
+    SIL Open Font License 1.1，可自由再分发）。许可全文见 `assets/fonts/FusionPixel12.LICENSE-OFL.txt`。
+    来源 <https://github.com/TakWolf/fusion-pixel-font>。**本项目未修改字体文件**。
+  - `assets/fonts/NotoSansSC.ttf`（**Noto Sans SC**，SIL Open Font License 1.1，可自由再分发）——
+    保留作为像素字体缺字时的回退。
 
 ---
 

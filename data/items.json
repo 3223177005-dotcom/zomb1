@@ -208,6 +208,44 @@
       "StackLimit": 60,
       "Value": 6,
       "Stats": {}
+    },
+    {
+      "Id": "armor_arman",
+      "GridW": 2,
+      "GridH": 2,
+      "IconPath": "res://assets/sprites/items32/zs/armor/s_item_armor_arman.png",
+      "Name": "Arman 防护服",
+      "Category": "Armor",
+      "Rarity": "Epic",
+      "Description": "ZS 移植：IV 级身体护甲，耐久损耗系数 35。",
+      "Weight": 5.8,
+      "StackLimit": 1,
+      "Value": 8100,
+      "Stats": {
+        "MaxDurability": 100.0,
+        "ArmorClass": 4,
+        "ArmorDurDamage": 35.0,
+        "ArmorIsHelmet": 0
+      }
+    },
+    {
+      "Id": "helmet_steel",
+      "GridW": 2,
+      "GridH": 2,
+      "IconPath": "res://assets/sprites/items32/zs/armor/s_item_armor_bulletproof.png",
+      "Name": "钢盔",
+      "Category": "Armor",
+      "Rarity": "Rare",
+      "Description": "ZS 移植：III 级头盔，只能戴头盔位。",
+      "Weight": 1.6,
+      "StackLimit": 1,
+      "Value": 2200,
+      "Stats": {
+        "MaxDurability": 100.0,
+        "ArmorClass": 3,
+        "ArmorDurDamage": 45.0,
+        "ArmorIsHelmet": 1
+      }
     }
   ]
 }

@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 
 /// <summary>
 /// 枪械数据（未来：不同枪械与改枪系统通过替换/修改这些字段实现）。
@@ -50,4 +50,18 @@ public partial class GunData : Resource
     [Export] public float SprintSpreadBonus { get; set; } = 10.0f;   // 冲刺时额外散布
     /// <summary>【暂未使用】保留给将来的「连续射击散布累积」后的恢复速度。</summary>
     [Export] public float SpreadRecovery { get; set; } = 10.0f;
+
+    // ---------- ZS 后坐模型用的三项（scripts/combat/RecoilModel.cs）----------
+    /// <summary>人机工效（ZS 的 ergo，0~100）：越高，移动晃动累积越慢、静止回复越快、晃动上限越高。</summary>
+    [Export] public float Ergonomics { get; set; } = 35.0f;
+
+    /// <summary>每发后坐（ZS 的 weapon.recoil，量纲同其 data.win 数值，AK 级约 114）。</summary>
+    [Export] public float RecoilPerShot { get; set; } = 114.0f;
+
+    /// <summary>武器重量（kg，ZS 的 basic.weight）：参与「晃动上限 = 500000/(ergo*重量)」。</summary>
+    [Export] public float WeightKg { get; set; } = 3.3f;
+
+    /// <summary>穿透（ZS 的 ammo.penetration）：对护甲等级结算用，见 scripts/item/ArmorService.cs。</summary>
+    [Export] public float Penetration { get; set; } = 25.0f;
 }
+

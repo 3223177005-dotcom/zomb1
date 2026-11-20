@@ -36,6 +36,20 @@ public partial class WeaponVisual : Node2D
     private Sprite2D _gun;
     private Sprite2D _flash;
 
+    /// <summary>配件叠加层（枪 Sprite 的子节点，自动继承缩放/旋转/后坐）。</summary>
+    private WeaponModOverlay _mods;
+
+    /// <summary>换弹 / 切枪的姿态曲线（纯数学，见 scripts/combat/WeaponPoseModel.cs）。</summary>
+    private readonly WeaponPoseModel _pose = new();
+
+    /// <summary>本帧的基础朝向角（不含姿态偏移），由 AimAt / ApplyCdda 写入。</summary>
+    private float _baseAngle;
+
+    /// <summary>枪精灵的世界缩放：ZS 素材 0.8（= ZS 的 0.4 × 本项目 16→32px 的 2 倍），CDDA 素材 2.0。</summary>
+    private float _gunScale = 2.0f;
+
+    private const float ZsWeaponScale = 0.8f;
+
     /// <summary>true = 用 CDDA 素材（`assets/sprites/weapons_cdda/<id>.png`，纯枪不带手）；
     /// false = 退回旧的 6 帧「手握枪」贴图。</summary>
     [Export] public bool UseCddaGun { get; set; } = true;
@@ -65,12 +79,21 @@ public partial class WeaponVisual : Node2D
         _gun = new Sprite2D { Name = "Gun", Centered = true, Scale = new Vector2(2.0f, 2.0f) };
         AddChild(_gun);
 
+        _mods = new WeaponModOverlay { Name = "Mods" };
+        _gun.AddChild(_mods);      // 挂在枪下面：跟着枪一起 2×、旋转、后坐
+
         _flash = new Sprite2D { Name = "Flash", Centered = true, Visible = false, Scale = new Vector2(2.0f, 2.0f) };
         AddChild(_flash);
 
         SetAnim("idle");
         ApplyGunOffset();
     }
+
+    /// <summary>
+    /// 握把在枪贴图上的横向位置比例（0~1）。CDDA 素材按长度 35%；导入 ZS 素材时填 ZS 的
+    /// 原点比例（例如 SVD 是 18/80 = 0.225），这样 ZS 的像素挂点就能直接用。
+    /// </summary>
+    [Export] public float GripFractionX { get; set; } = 0.35f;
 
     /// <summary>
     /// 按物品 id 换 CDDA 枪贴图（`weapons_cdda/<id>.png`）。找不到就退回旧的手握枪贴图。
@@ -82,21 +105,65 @@ public partial class WeaponVisual : Node2D
             _cddaTex = null;
             return;
         }
-        var tex = GD.Load<Texture2D>($"res://assets/sprites/weapons_cdda/{itemId}.png");
+
+        // ZS 素材（id 带 zs: 前缀）：贴图在 weapons_cdda/zs/<名>_base.png，
+        // 握把点 = ZS 精灵原点，挂点用 ZsMountTable 里的像素值。
+        ZsMountTable.TryGet(itemId, out var zsEntry);
+        string path = zsEntry != null
+            ? ZsMountTable.ArtPath(itemId)
+            : $"res://assets/sprites/weapons_cdda/{itemId}.png";
+
+        var tex = GD.Load<Texture2D>(path);
         if (tex == null || tex == _cddaTex) return;
 
         _cddaTex = tex;
         var size = tex.GetSize();
-        // 贴图已在工具里裁到枪身外框：握把取长度 35% 处、垂直居中；枪口取右端
         var centre = new Vector2(size.X * 0.5f, size.Y * 0.5f);
-        var grip = new Vector2(size.X * 0.35f, size.Y * 0.5f);
-        _cddaOffset = centre - grip;
-        _cddaMuzzle = new Vector2(size.X - grip.X, 0.0f) * 2.0f;   // 2× 缩放后的局部坐标
+        // 非 ZS 素材（CDDA）：握把取长度 35% 处、垂直居中，世界缩放 2×
+        var grip = new Vector2(size.X * GripFractionX, size.Y * 0.5f);
+
+        // ZS 素材按 ZS 的写法（class_player_weapon.func_draw）：
+        //   缩放 0.4 是 16px 世界的值 → 本项目 32px 世界 = 0.8
+        //   旋转支点 = sprite_ingame 的原点（不是 inv 的原点）
+        //   组合图自身以 sprite_inv（原点 0,0）为坐标原点
+        _gunScale = zsEntry != null ? ZsWeaponScale : 2.0f;
+        _cddaOffset = zsEntry != null ? centre - zsEntry.Pivot : centre - grip;
+
+        // 枪口 = ZS 的 brake 槽位置（没有 brake 数据就用贴图右端）；
+        // 换算到节点局部：贴图像素 − 支点，再乘枪的缩放。CDDA 素材沿用"贴图右端"。
+        Vector2 muzzleTex = size;
+        if (zsEntry != null)
+        {
+            muzzleTex = zsEntry.Slots.TryGetValue("brake", out var brake)
+                ? brake.Offset
+                : new Vector2(size.X, zsEntry.Pivot.Y);
+        }
+        _cddaMuzzle = zsEntry != null
+            ? (muzzleTex - zsEntry.Pivot) * _gunScale
+            : new Vector2(size.X - grip.X, 0.0f) * _gunScale;
+
+        // 配件叠加层：ZS 素材用像素挂点（原点 0,0 即组合图坐标原点），其它按比例
+        // ZS：节点原点 = 旋转支点（ingame 原点），组合图坐标原点 = inv 原点 (0,0)
+        _mods?.Setup(tex, zsEntry != null ? zsEntry.Pivot : grip, zsEntry != null ? Vector2.Zero : grip);
+        _mods?.Refresh(WeaponMods.Active);   // 换枪后重建配件叠加层
     }
+
+    /// <summary>枪口的世界坐标（子弹从这个点出膛；没有贴图时退回自身原点）。</summary>
+    public Vector2 MuzzleGlobal => ToGlobal(_cddaMuzzle);
+
+    /// <summary>配件叠加层（自测 / 调试用）。</summary>
+    public WeaponModOverlay Mods => _mods;
+
+    /// <summary>配件增删后手动刷新叠加层（改枪面板装/卸时调用）。</summary>
+    public void RefreshMods() => _mods?.Refresh(WeaponMods.Active);
+
+    /// <summary>切枪甩枪：时长由 ergo 缩短（ZS 的 switching_weapon_max 同款公式）。</summary>
+    public void PlaySwitch(float seconds) => _pose.StartSwitch(seconds);
 
     /// <summary>CDDA 贴图的统一摆法：给定角度 + 是否竖直镜像。</summary>
     private void ApplyCdda(float angle, bool mirror)
     {
+        _baseAngle = angle;
         Rotation = angle;
         Scale = new Vector2(1.0f, mirror ? -1.0f : 1.0f);
 
@@ -107,7 +174,7 @@ public partial class WeaponVisual : Node2D
             _gun.Frame = 0;
         }
         _gun.FlipH = false;
-        _gun.Scale = new Vector2(2.0f, 2.0f);
+        _gun.Scale = new Vector2(_gunScale, _gunScale);
         _gun.Offset = _cddaOffset;
         _gun.Position = new Vector2(-_recoil, 0.0f);        // 后坐：沿枪身往回缩
 
@@ -145,6 +212,7 @@ public partial class WeaponVisual : Node2D
         }
 
         Rotation = aimDir.Angle();
+        _baseAngle = Rotation;
 
         // 朝左时竖直镜像：否则枪会「倒着拿」（180° 旋转后枪的上面朝下）
         Scale = new Vector2(1.0f, aimDir.X < 0.0f ? -1.0f : 1.0f);
@@ -230,82 +298,10 @@ public partial class WeaponVisual : Node2D
         timer.Timeout += () => { if (IsInstanceValid(_flash)) _flash.Visible = false; };
     }
 
-    private void SetAnim(string action)
-    {
-        // death 只有 side 有 —— 其它方向退回 idle
-        string dir = _dir;
-        var tex = GD.Load<Texture2D>($"res://assets/sprites/characters/weapon/{dir}_{action}.png");
-        if (tex == null && action == "death")
-        {
-            dir = "side";
-            action = "death";
-            tex = GD.Load<Texture2D>($"res://assets/sprites/characters/weapon/{dir}_{action}.png");
-        }
-        if (tex == null) return;
-
-        int frames = action switch
-        {
-            "shoot" or "fire" => 3,
-            "reload" => 8,
-            "death" => 6,
-            _ => 6,
-        };
-
-        _anim = action;
-        _animTime = 0.0f;
-        _frames = frames;
-
-        _gun.Texture = tex;
-        _gun.Hframes = frames;
-        _gun.Frame = 0;
-        _gun.FlipH = dir == "side" && _gun.FlipH;
-    }
-
-    /// <summary>枪相对角色中心的位置（按朝向不同）。</summary>
-    private void ApplyGunOffset()
-    {
-        // CDDA 贴图：旧的三方向模式也用同一张图，只是角度吸附到 上/下/侧
-        if (UseCddaGun && _cddaTex != null)
-        {
-            float angle = _dir switch
-            {
-                "up" => -Mathf.Pi * 0.5f,
-                "down" => Mathf.Pi * 0.5f,
-                _ => _gun.FlipH ? Mathf.Pi : 0.0f,
-            };
-            Position = HandAnchor;
-            ApplyCdda(angle, _gun.FlipH);
-            return;
-        }
-
-        if (Style == AimStyle.Rotate360) return;    // 由 AimAt 接管
-
-        // 相对**角色可见中心**的手部位置
-        _gun.Position = _dir switch
-        {
-            "up" => new Vector2(0, -4),
-            "side" => new Vector2(_gun.FlipH ? -14 : 14, 6),
-            _ => new Vector2(0, 8),
-        };
-        _gun.Offset = Vector2.Zero;
-    }
-
-    private void ApplyFlashOffset()
-    {
-        if (_flash == null || Style == AimStyle.Rotate360) return;   // 由 AimAt 接管
-
-        // 枪口位置 = 枪的前端
-        _flash.Position = _dir switch
-        {
-            "up" => new Vector2(0, -26),
-            // 朝右时枪口稍高一点（实测偏下，上移 3px）
-            "side" => new Vector2(_flash.FlipH ? -32 : 32, 0),   // 左右同高，都对齐枪管
-            _ => new Vector2(0, 20),
-        };
-    }
-
     public override void _Process(double delta)
     {
+        _pose.Update((float)delta);
+
         // ---- CDDA 贴图：没有逐帧动画，只处理后坐回弹 ----
         if (UseCddaGun && _cddaTex != null)
         {
@@ -316,14 +312,19 @@ public partial class WeaponVisual : Node2D
 
             if (_gun != null)
             {
-                _gun.Position = new Vector2(-_recoil, 0.0f);
+                // 姿态（换弹抬枪 / 切枪甩枪）叠加在正常瞄准角与后坐位移上
+                Rotation = _baseAngle + Mathf.DegToRad(_pose.AngleOffsetDeg);
+                _gun.Position = new Vector2(-_recoil, 0.0f) + _pose.LocalOffset;
                 // 火焰贴图前几帧的火根不在最左侧，往枪管里压 3px 才贴住枪口
-        _flash.Position = _cddaMuzzle - new Vector2(3.0f + _recoil, 0.0f);
+                _flash.Position = _cddaMuzzle - new Vector2(3.0f + _recoil, 0.0f) + _pose.LocalOffset;
             }
             return;
         }
 
         if (_gun?.Texture == null) return;
+
+        // 三方向旧贴图同样叠姿态（位置由 ApplyGunOffset 决定，这里只叠角度）
+        Rotation = _baseAngle + Mathf.DegToRad(_pose.AngleOffsetDeg);
 
         float dt = (float)delta;
         _animTime += dt;

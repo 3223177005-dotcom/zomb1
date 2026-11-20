@@ -365,7 +365,9 @@ public partial class Enemy : CharacterBody2D, IDamageable
 		_animName = "";
 		_oneShot = false;
 
-		if (_player is IDamageable damageable)
+		if (_player is IArmoredDamageable armored)
+			armored.TakeHit(EnemyData.Damage, EnemyData.Penetration);
+		else if (_player is IDamageable damageable)
 			damageable.TakeDamage(EnemyData.Damage);
 	}
 

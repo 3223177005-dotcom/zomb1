@@ -27,10 +27,11 @@ NavigationManager="*res://scripts/autoload/NavigationManager.cs"
 
 [display]
 
-window/size/viewport_width=480
-window/size/viewport_height=270
-window/size/window_width_override=960
-window/size/window_height_override=540
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
 window/stretch/scale_mode="integer"
 
 [dotnet]
@@ -40,7 +41,18 @@ project/assembly_name="ZombieExtraction"
 [gui]
 
 timers/tooltip_delay_sec=0.2
-theme/custom_font="res://assets/fonts/NotoSansSC.ttf"
+; 像素字体：12px 设计网格（Fusion Pixel，OFL-1.1），关掉抗锯齿/微调才是硬边像素
+theme/custom_font="res://assets/fonts/FusionPixel12.ttf"
+; 全局皮肤：所有控件默认吃这套 9-slice + 配色（见 docs/08）
+theme/custom="res://assets/ui/theme/zombie_theme.tres"
+theme/default_font_antialiasing=0
+theme/default_font_hinting=0
+theme/default_font_subpixel_positioning=0
+theme/default_font_multichannel_signed_distance_field=false
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
 
 [input]
 

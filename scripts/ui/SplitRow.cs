@@ -43,8 +43,8 @@ public partial class SplitRow : PanelContainer
 
         AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            BgColor = new Color(0.16f, 0.22f, 0.32f, 0.95f),
-            BorderColor = new Color(0.42f, 0.62f, 0.92f, 1.0f),
+            BgColor = new Color(0.74f, 0.70f, 0.61f, 0.98f),
+            BorderColor = new Color(0.48f, 0.30f, 0.14f, 1.0f),
             BorderWidthTop = 2, BorderWidthBottom = 2, BorderWidthLeft = 2, BorderWidthRight = 2,
         });
 
@@ -136,7 +136,7 @@ public partial class SplitRow : PanelContainer
         if (_hint == null) return;
 
         _hint.Text = text;
-        _hint.AddThemeColorOverride("font_color", new Color(1.0f, 0.45f, 0.45f));
+        _hint.AddThemeColorOverride("font_color", new Color(0.66f, 0.16f, 0.13f));
     }
 
     private static Label MakeLabel(string text, int fontSize, Color color)

@@ -45,15 +45,18 @@ public static class ItemRarityInfo
 		ItemRarity.Mythic,
 	};
 
-	/// <summary>稀有度对应的展示颜色（深色背景下可辨识）。</summary>
+	/// <summary>
+	/// 稀有度展示颜色（**浅卡其底上的深色印章 / 军阶色**）。
+	/// 浅色底板必须配深色字，否则文字会"发飘"；这组色同时也是格块边框色。
+	/// </summary>
 	public static Color GetColor(ItemRarity rarity) => rarity switch
 	{
-		ItemRarity.Uncommon => new Color(0.45f, 0.85f, 0.40f),   // 绿
-		ItemRarity.Rare => new Color(0.35f, 0.62f, 0.95f),       // 蓝
-		ItemRarity.Epic => new Color(0.72f, 0.42f, 0.92f),       // 紫
-		ItemRarity.Legendary => new Color(0.96f, 0.80f, 0.26f),  // 金
-		ItemRarity.Mythic => new Color(0.92f, 0.25f, 0.28f),     // 红
-		_ => new Color(0.86f, 0.86f, 0.86f),                     // 白（普通）
+		ItemRarity.Uncommon => new Color(0.18f, 0.38f, 0.16f),   // 深军绿
+		ItemRarity.Rare => new Color(0.14f, 0.31f, 0.45f),       // 深海军钢蓝
+		ItemRarity.Epic => new Color(0.38f, 0.18f, 0.44f),       // 深勋章紫
+		ItemRarity.Legendary => new Color(0.62f, 0.34f, 0.08f),  // 深古铜金
+		ItemRarity.Mythic => new Color(0.64f, 0.13f, 0.11f),     // 兵工厂绯红
+		_ => new Color(0.24f, 0.21f, 0.17f),                     // 深炭褐（普通）
 	};
 
 	/// <summary>稀有度中文名。</summary>

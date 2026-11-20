@@ -20,6 +20,9 @@ public partial class EventBus : Node
     // ---------- 玩家 ----------
     [Signal] public delegate void PlayerHealthChangedEventHandler(float current, float maximum);
     [Signal] public delegate void PlayerStaminaChangedEventHandler(float current, float maximum);
+
+    /// <summary>护甲耐久变化（current / max）。UI 可以据此显示耐久条。</summary>
+    [Signal] public delegate void PlayerArmorChangedEventHandler(string bodyName, float bodyDur, float bodyMax, string helmetName, float helmetDur, float helmetMax);
     [Signal] public delegate void PlayerDiedEventHandler();
 
     /// <summary>当前手持武器信息变化（切武器槽 / 换开火模式时发出）。
@@ -29,6 +32,12 @@ public partial class EventBus : Node
     // ---------- UI 面板 ----------
     /// <summary>UI 面板开合。打开时角色应屏蔽开火，避免点 UI 的同时误射。</summary>
     [Signal] public delegate void UiPanelToggledEventHandler(bool open);
+
+    /// <summary>
+    /// 全屏面板（Tab 背包）要求 HUD 让位：true = 显示 HUD，false = 收起。
+    /// 与 <see cref="UiPanelToggled"/> 分开，是因为小面板（地面拾取）不该让 HUD 消失。
+    /// </summary>
+    [Signal] public delegate void HudVisibleRequestedEventHandler(bool visible);
 
     // ---------- 物品 / 背包 ----------
     [Signal] public delegate void ItemPickedUpEventHandler(string itemId, int amount);
@@ -41,3 +50,5 @@ public partial class EventBus : Node
     [Signal] public delegate void ExtractionStartedEventHandler();
     [Signal] public delegate void ExtractionCompletedEventHandler();
 }
+
+

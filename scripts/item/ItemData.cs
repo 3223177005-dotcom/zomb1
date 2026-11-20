@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 
 /// <summary>
 /// 物品的静态定义（数据层核心）。
@@ -148,6 +148,15 @@ public partial class ItemData : Resource
 
     /// <summary>容器数据（仅容器类；CategoryData 需为 ContainerData）。约定每个容器只有一个仓。</summary>
     public ContainerData ContainerStats => CategoryData as ContainerData;
+
+    /// <summary>护甲耐久损耗系数（ZS 的 dur_damage；缺省 100 = 最不耐用）。</summary>
+    public float ArmorDurDamage => GetStatFloat(ItemStats.ArmorDurDamage, 100.0f);
+
+    /// <summary>是不是头盔（ZS 里头盔单占头部位）。</summary>
+    public bool ArmorIsHelmet => GetStatInt(ItemStats.ArmorIsHelmet) != 0;
+
+    /// <summary>护甲数据是否可用（护甲类 + 有耐久 + 等级合法）。</summary>
+    public bool IsUsableArmor => Category == ItemCategory.Armor && MaxDurability > 0.0f && ArmorClass >= 1;
 
     /// <summary>是否容器（能装东西）。</summary>
     public bool IsContainer => Category == ItemCategory.Container && ContainerStats != null;
@@ -333,3 +342,5 @@ public partial class ItemData : Resource
 
     public override string ToString() => $"{Name}({Id}) [{Category}]";
 }
+
+

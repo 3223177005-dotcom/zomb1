@@ -50,23 +50,7 @@ public partial class ModifyPanel : Control
         center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
         _card = new PanelContainer { CustomMinimumSize = new Vector2(620, 505) };
-
-        // ★ 必须有背景，否则会透出背后的背包列表
-        var cardStyle = new StyleBoxFlat
-        {
-            BgColor = new Color(0.075f, 0.085f, 0.105f, 0.99f),
-            BorderColor = new Color(0.62f, 0.50f, 0.24f, 0.95f),
-            BorderWidthLeft = 2,
-            BorderWidthRight = 2,
-            BorderWidthTop = 2,
-            BorderWidthBottom = 2,
-            CornerRadiusTopLeft = 3,
-            CornerRadiusTopRight = 3,
-            CornerRadiusBottomLeft = 3,
-            CornerRadiusBottomRight = 3,
-        };
-        _card.AddThemeStyleboxOverride("panel", cardStyle);
-
+        _card.AddThemeStyleboxOverride("panel", UiStyle.PanelOuter());
         center.AddChild(_card);
 
         var margin = new MarginContainer();
@@ -86,17 +70,18 @@ public partial class ModifyPanel : Control
 
         _title = new Label { Text = "改装", SizeFlagsHorizontal = SizeFlags.ExpandFill };
         _title.AddThemeFontSizeOverride("font_size", 22);
-        _title.AddThemeColorOverride("font_color", new Color(0.95f, 0.88f, 0.55f));
+        _title.AddThemeColorOverride("font_color", UiStyle.AmberHeader);
         head.AddChild(_title);
 
         var close = new Button { Text = "关闭" };
         close.AddThemeFontSizeOverride("font_size", 16);
+        UiStyle.StylePixelButton(close);
         close.Pressed += Close;
         head.AddChild(close);
 
         _hint = new Label { Text = DefaultHint };
         _hint.AddThemeFontSizeOverride("font_size", 15);
-        _hint.AddThemeColorOverride("font_color", new Color(0.62f, 0.64f, 0.70f));
+        _hint.AddThemeColorOverride("font_color", UiStyle.CaptionColor);
         box.AddChild(_hint);
 
         box.AddChild(new HSeparator());
@@ -120,7 +105,7 @@ public partial class ModifyPanel : Control
         // ── 背包里的配件（拖上去装） ──
         _bagTitle = new Label { Text = BagTitleText(0) };
         _bagTitle.AddThemeFontSizeOverride("font_size", 15);
-        _bagTitle.AddThemeColorOverride("font_color", new Color(0.62f, 0.64f, 0.70f));
+        _bagTitle.AddThemeColorOverride("font_color", UiStyle.CaptionColor);
         box.AddChild(_bagTitle);
 
         var bagScroll = new ScrollContainer
@@ -140,7 +125,7 @@ public partial class ModifyPanel : Control
         // ── 数值汇总 ──
         _stats = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart };
         _stats.AddThemeFontSizeOverride("font_size", 15);
-        _stats.AddThemeColorOverride("font_color", new Color(0.80f, 0.82f, 0.88f));
+        _stats.AddThemeColorOverride("font_color", HudWidgets.BodyColor);
         box.AddChild(_stats);
     }
 
@@ -227,7 +212,7 @@ public partial class ModifyPanel : Control
 
             var empty = new Label { Text = "（身上没有配件）" };
             empty.AddThemeFontSizeOverride("font_size", 15);
-            empty.AddThemeColorOverride("font_color", new Color(0.42f, 0.44f, 0.50f));
+            empty.AddThemeColorOverride("font_color", UiStyle.EmptySlotColor);
             _bagList.AddChild(empty);
             return;
         }
@@ -249,7 +234,7 @@ public partial class ModifyPanel : Control
                     MouseFilter = MouseFilterEnum.Ignore,
                 };
                 header.AddThemeFontSizeOverride("font_size", 13);
-                header.AddThemeColorOverride("font_color", new Color(0.62f, 0.64f, 0.70f));
+                header.AddThemeColorOverride("font_color", UiStyle.CaptionColor);
                 _bagList.AddChild(header);
             }
 
@@ -309,7 +294,7 @@ public partial class ModifyPanel : Control
             MouseFilter = MouseFilterEnum.Ignore,
         };
         name.AddThemeFontSizeOverride("font_size", 17);
-        name.AddThemeColorOverride("font_color", new Color(0.70f, 0.73f, 0.80f));
+        name.AddThemeColorOverride("font_color", UiStyle.CaptionColor);
         row.AddChild(name);
 
         // 内容
@@ -323,7 +308,7 @@ public partial class ModifyPanel : Control
         };
         content.AddThemeFontSizeOverride("font_size", 17);
         content.AddThemeColorOverride("font_color",
-            empty ? new Color(0.42f, 0.44f, 0.50f) : new Color(0.86f, 0.88f, 0.92f));
+            empty ? UiStyle.EmptySlotColor : HudWidgets.BodyColor);
         row.AddChild(content);
 
         // 卸下

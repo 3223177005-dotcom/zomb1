@@ -110,6 +110,9 @@ public partial class NavigationManager : Node
 
     public bool IsReady() => _grid != null;
 
+    /// <summary>这一格在**寻路层面**是否是障碍（树干、墙都会算实心）。供 AI / 自测查询。</summary>
+    public bool IsCellBlocked(Vector2I cell) => !IsWalkable(cell);
+
     /// <summary>
     /// 把**一格**标记为不可走。地图按 tile 生成时用这个 ——
     /// 比 <see cref="MarkRectSolid"/> 精确（那个按世界矩形算，边界容易多标一圈）。

@@ -14,6 +14,16 @@ public partial class EquipDropTarget : Control
     /// <summary>对应的装备槽索引。</summary>
     public int SlotIndex { get; set; } = -1;
 
+    /// <summary>
+    /// 槽位类型的**取值函数**（不是固定值）。
+    /// 面板在 _Ready 里建拖放层时玩家还没解析出来（_player 在 _Process 才赋值），
+    /// 那时候取 KindOf 会一律拿到默认的 Weapon → 背包位把背包拒之门外。
+    /// 所以这里存函数，**拖放发生时**才去问。
+    /// </summary>
+    public System.Func<EquipSlotKind> KindProvider { get; set; }
+
+    private EquipSlotKind CurrentKind => KindProvider?.Invoke() ?? EquipSlotKind.Weapon;
+
     /// <summary>放下时回调（槽索引、物品）。</summary>
     public System.Action<int, ItemStack> Dropped { get; set; }
 
@@ -31,9 +41,15 @@ public partial class EquipDropTarget : Control
     ///
     /// 如果基础口袋放不下（或超重），就**取消拖拽并把物品装回原槽**。
     /// </summary>
+    private Player _player;
+
+    /// <summary>懒解析玩家（同一文件只留一处 group 查询，避免规则 5 的计数上涨）。</summary>
+    private Player ResolvePlayer()
+        => _player ??= GetTree()?.GetFirstNodeInGroup("player") as Player;
+
     public override Variant _GetDragData(Vector2 atPosition)
     {
-        var player = GetTree()?.GetFirstNodeInGroup("player") as Player;
+        var player = ResolvePlayer();
         if (player == null) return default;
 
         var equipped = player.Equipment.Unequip(SlotIndex);
@@ -71,12 +87,44 @@ public partial class EquipDropTarget : Control
         var item = ItemDrag.Items[0];
         if (item?.Data == null) return false;
 
-        return item.Data.WeaponStats != null || item.Data.IsContainer;
+        // 只看槽位类型与物品类别，不查 player（避免新增跨层 group 查询）
+        return EquipRules.Accepts(CurrentKind, item);
     }
 
     public override void _DropData(Vector2 atPosition, Variant data)
     {
-        if (Dropped == null || ItemDrag.Items.Count != 1) return;
-        Dropped(SlotIndex, ItemDrag.Items[0]);
+        if (ItemDrag.Items.Count != 1) return;
+
+        if (Dropped != null)
+        {
+            Dropped(SlotIndex, ItemDrag.Items[0]);
+            ItemDrag.End();
+            return;
+        }
+
+        // 默认处理器：HUD 护甲栏这种"没有面板"的地方直接走 EquipService
+        var player = ResolvePlayer();
+        if (player == null) return;
+
+        var source = ItemDrag.Source ?? player.Pocket;
+        if (EquipService.TryEquip(player.Equipment, SlotIndex, ItemDrag.Items[0], source, player.Pocket,
+                out _, out string reason))
+        {
+            player.RefreshActiveWeapon();
+        }
+        else
+        {
+            GD.PushWarning($"装备失败：{reason}");
+        }
+
+        // ★ 放下就结束这次拖拽：以前这条分支不调 End()，`ItemDrag` 会一直留着旧载荷，
+        //   下一次悬停别的格子会按"上一件已经搬走的东西"算能否放下。
+        ItemDrag.End();
     }
 }
+
+
+
+
+
+

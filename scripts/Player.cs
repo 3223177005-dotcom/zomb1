@@ -5,7 +5,7 @@ using System.Collections.Generic;
 /// 玩家：八方向移动 + 鼠标瞄准 + 射击（按开火模式）/ 近战 + 散布系统 + 生命值。
 /// 搜打撤：死亡不重生，本局结束（未来替换为：丢失装备 → 结算界面 → 回藏身处）。
 /// </summary>
-public partial class Player : CharacterBody2D, IDamageable
+public partial class Player : CharacterBody2D, IArmoredDamageable
 {
     [Export] public float WalkSpeed { get; set; } = 240.0f;
     [Export] public float SprintSpeed { get; set; } = 400.0f;
@@ -48,12 +48,17 @@ public partial class Player : CharacterBody2D, IDamageable
     public const int Slot1 = 0;
     public const int Slot2 = 1;
     public const int ContainerSlot = 2;
+    public const int ArmorSlot = 3;
+    public const int HelmetSlot = 4;
 
     /// <summary>
     /// 装备栏：槽位**不因武器类型区分** —— 远程和近战占用同一种槽，放哪个由玩家决定。
     /// 第 3 槽用来放容器（背包）。武器行为由物品自身的 WeaponData.Kind 决定，与槽位编号无关。
     /// </summary>
-    public EquipmentSlots Equipment { get; } = new(SlotCount);
+    /// 槽位类型照 ZS 的 loadout：两个武器位 + 背包位（护甲/头盔/面罩留位待物品数据）。
+    public EquipmentSlots Equipment { get; } = new(
+        EquipSlotKind.Weapon, EquipSlotKind.Weapon, EquipSlotKind.Container,
+        EquipSlotKind.Armor, EquipSlotKind.Helmet);
 
     /// <summary>玩家基础口袋（容器树的根，Owner == null）。格子 = <see cref="BasePocketGridW"/> × <see cref="BasePocketGridH"/>。</summary>
     public Inventory Pocket { get; private set; }
@@ -66,6 +71,21 @@ public partial class Player : CharacterBody2D, IDamageable
 
     /// <summary>当前移动附加散布（立刻切换，不做过渡）。</summary>
     private float _moveBonus = 0.0f;
+
+    /// <summary>ZS 后坐模型（移动池 + 开火池）。散布与准星推开都从这里取，见 scripts/combat/RecoilModel.cs。</summary>
+    public RecoilModel Recoil { get; } = new();
+
+    /// <summary>耐力（ZS 的 stamina）：跑动按负重比消耗，不跑时恒定回复，低于 5 禁止起跑。</summary>
+    public float Stamina { get; private set; } = CombatTuning.StaminaMax;
+
+    /// <summary>是否在掩体 / 安全区：决定跑速 ×1.5 与负重豁免。子场景可在编辑器里勾。</summary>
+    [Export] public bool InHub { get; set; } = false;
+
+    /// <summary>是否启用 ZS 的速度档位（96 / 152 px/s）。关掉就回到 <see cref="WalkSpeed"/> / <see cref="SprintSpeed"/>。</summary>
+    [Export] public bool UseZsSpeedProfile { get; set; } = true;
+
+    private float _lastMouseX;
+    private float _staminaEmitAccum;
 
     public float Health { get; private set; } = 100.0f;
     public bool IsDead { get; private set; } = false;
@@ -111,6 +131,29 @@ public partial class Player : CharacterBody2D, IDamageable
     /// </summary>
     public bool IsRangedActive => ActiveWeaponItem != null && !IsMeleeActive;
 
+    /// <summary>
+    /// **护甲测试内容**（临时；正式版删）：开局往口袋里塞一件身体甲 + 一顶头盔，
+    /// 并挂上 <see cref="ArmorTestKit"/>（F6/F7/F8 打自己、F9 回血）。
+    /// </summary>
+    [Export] public bool SeedDebugArmor { get; set; } = true;
+
+    private void SeedArmorTestItem()
+    {
+        if (!SeedDebugArmor) return;
+
+        foreach (var id in new[] { "armor_arman", "helmet_steel" })
+        {
+            var data = ItemDatabase.Instance?.GetItem(id);
+            if (data == null) continue;
+
+            var stack = new ItemStack(data, 1);
+            var code = Pocket.TryInsert(stack, out _);
+            GD.Print($"[ArmorTest] 发放 {id}：{code}（口袋占用 {Pocket.UsedCells} 格）");
+        }
+
+        AddChild(new ArmorTestKit { Name = "ArmorTestKit" });
+    }
+
     public override void _Ready()
     {
         AddToGroup("player");
@@ -132,6 +175,7 @@ public partial class Player : CharacterBody2D, IDamageable
 
         // 基础口袋：容器树的根。重量上限走玩家全局账，所以这里只限格子。
         Pocket = new Inventory(float.MaxValue, BasePocketGridW, BasePocketGridH);
+        SeedArmorTestItem();
 
         EquipStartingLoadout();
 
@@ -666,14 +710,17 @@ public partial class Player : CharacterBody2D, IDamageable
         {
             _weaponVisual.Visible = IsRangedActive;
             if (!IsMeleeActive) _meleeVisual?.Cancel();
-            // CDDA 素材：按物品 id 换枪贴图（weapons_cdda/<id>.png，纯枪不带手）
-            _weaponVisual.SetGunItem(IsRangedActive ? ActiveWeaponItem?.Data?.Id : null);
+            // 枪贴图：id 能对上 ZS 素材就用 ZS 的（zs:<id>，底图 + ZS 挂点），否则用本项目 CDDA 图
+            string gunId = IsRangedActive ? ActiveWeaponItem?.Data?.Id : null;
+            _weaponVisual.SetGunItem(ZsArt.GunId(gunId) ?? gunId);
         }
 
         // 切武器的手感反馈：近战偏暖色（注意 _visual 是隐藏的色块节点，
         // 真正显示的是 _sprite，所以必须调 _sprite 的 Modulate）
         if (_sprite != null)
             _sprite.Modulate = IsMeleeActive ? new Color(1.0f, 0.92f, 0.72f) : Colors.White;
+
+        EmitArmorState();   // 换装 / 卸甲后把护甲状态推给 HUD
     }
 
     /// <summary>
@@ -703,28 +750,67 @@ public partial class Player : CharacterBody2D, IDamageable
     private void HandleMovement(float delta)
     {
         var inputDir = Input.GetVector("move_left", "move_right", "move_up", "move_down");
-        bool isSprinting = Input.IsActionPressed("sprint") && inputDir != Vector2.Zero;
         bool isAiming = Input.IsActionPressed("aim");
-
-        float speed = isSprinting ? SprintSpeed : WalkSpeed;
-        if (isAiming) speed *= AimSpeedMultiplier;
-        speed *= ActiveWeaponMoveMultiplier;   // 手持武器自身的移速倍率
+        bool moveHeld = inputDir != Vector2.Zero;
 
         // ★ 近战出手期间**定住不动** —— 走 A 手感：打一下就停，打完才能继续走
         if (_punchLeft > 0.0f)
         {
             Velocity = Vector2.Zero;
             MoveAndSlide();
+            TickRecoil(delta, false);
             return;
         }
 
+        // ZS 移动模型：负重两档降级 + 冲刺耐力 + 瞄准减速（scripts/combat/MoveModel.cs）
+        var result = MoveModel.Compute(new MoveInputs
+        {
+            WalkSpeed = UseZsSpeedProfile ? CombatTuning.ZsWalkSpeed : WalkSpeed,
+            SprintSpeed = UseZsSpeedProfile ? CombatTuning.ZsSprintSpeed : SprintSpeed,
+            Weight = TotalWeight,
+            MaxWeight = MaxCarryWeight,
+            Stamina = Stamina,
+            SprintHeld = Input.IsActionPressed("sprint"),
+            Aiming = isAiming,
+            MoveHeld = moveHeld,
+            InHub = InHub,
+        }, delta, AimSpeedMultiplier);
+
+        ApplyStamina(result.StaminaDelta);
+
+        float speed = result.Speed * ActiveWeaponMoveMultiplier;   // 手持武器自身的移速倍率
         var targetVelocity = inputDir * speed;
-        if (inputDir != Vector2.Zero)
+        if (moveHeld)
             Velocity = Velocity.MoveToward(targetVelocity, Acceleration * delta);
         else
             Velocity = Velocity.MoveToward(Vector2.Zero, Friction * delta);
 
         MoveAndSlide();
+        TickRecoil(delta, moveHeld);
+    }
+
+    /// <summary>推进 ZS 的后坐两池：移动累积、静止回复、开火池持续衰减。</summary>
+    private void TickRecoil(float delta, bool moving)
+    {
+        var g = _weapon?.GunData;
+        float ergo = g != null ? g.Ergonomics : CombatTuning.RecoilMoveErgoWeight;
+        float weight = g != null ? g.WeightKg : 3.3f;
+        float mouseX = GetGlobalMousePosition().X;
+        float mouseDelta = mouseX - _lastMouseX;
+        _lastMouseX = mouseX;
+        Recoil.Tick(delta, ergo, weight, moving, mouseDelta);
+    }
+
+    /// <summary>耐力结算；累计变化超过 1 点时广播一次，避免每帧发信号。</summary>
+    private void ApplyStamina(float delta)
+    {
+        float before = Stamina;
+        Stamina = Mathf.Clamp(Stamina + delta, 0.0f, CombatTuning.StaminaMax);
+        _staminaEmitAccum += Mathf.Abs(Stamina - before);
+        if (_staminaEmitAccum < 1.0f) return;
+        _staminaEmitAccum = 0.0f;
+        EventBus.Instance.EmitSignal(
+            EventBus.SignalName.PlayerStaminaChanged, Stamina, CombatTuning.StaminaMax);
     }
 
     // ---------- 瞄准 / 开火 ----------
@@ -733,6 +819,7 @@ public partial class Player : CharacterBody2D, IDamageable
     {
         var aimDir = GetAimDirection();
         _visual.Rotation = aimDir.Angle();
+        SetWeaponBehindBody(aimDir.X < 0.0f);
 
         HandleWeaponSwitch();
 
@@ -766,10 +853,34 @@ public partial class Player : CharacterBody2D, IDamageable
         //   槽号一样但内容变了，不刷就会留着上一把的枪模型 / 开火数据。
         _activeSlot = slot;
         ApplyActiveWeapon();   // 里面已经包含"藏枪 / 近战染色"的视觉更新
+        PlayWeaponSwitch();
         EmitWeaponInfo();
         return true;
     }
 
+    /// <summary>切枪甩枪动画：时长被 ergo 缩短（ZS 的 switching_weapon_max 公式）。</summary>
+    private void PlayWeaponSwitch()
+    {
+        if (_weaponVisual == null) return;
+        var g = _weapon?.GunData;
+        float ergo = g != null ? g.Ergonomics : 35.0f;
+        float seconds = CombatTuning.SwitchBaseTime
+            * ((100.0f - ergo / CombatTuning.SwitchErgoDivisor) / 100.0f);
+        _weaponVisual.PlaySwitch(Mathf.Max(0.15f, seconds));
+    }
+
+    /// <summary>
+    /// 朝左瞄准时把枪换成「画在身体下面」（ZS 的 draw_before_follow）。
+    /// 用**子节点顺序**而不是 ZIndex：ZIndex 是画布级排序，设成 -1 会掉到地板图层下面（枪会整把消失）。
+    /// </summary>
+    private void SetWeaponBehindBody(bool behind)
+    {
+        if (_weaponBehind == behind || _weaponVisual == null || _sprite == null) return;
+        _weaponBehind = behind;
+        MoveChild(_weaponVisual, behind ? 0 : _sprite.GetIndex() + 1);
+    }
+
+    private bool _weaponBehind;
     private void OnUiPanelToggled(bool open)
         => _uiOpenCount = Mathf.Max(0, _uiOpenCount + (int)(open ? 1 : -1));
 
@@ -910,26 +1021,7 @@ public partial class Player : CharacterBody2D, IDamageable
 
         _sprite.FlipH = flip;
 
-        if (_weaponVisual != null)
-        {
-            if (WeaponFollowAim360)
-            {
-                // 武器脱离「角色朝向」，改成绕握持点自由旋转（泰拉瑞亚式）
-                _weaponVisual.Style = WeaponVisual.AimStyle.Rotate360;
-                _weaponVisual.AimAt(GetAimDirection());
-            }
-            else
-            {
-                // 旧表现：按 down / up / side 三方向贴图 + 固定偏移
-                _weaponVisual.Style = WeaponVisual.AimStyle.Directional;
-                // ★ 角色精灵自己有 Offset（脚底对齐用的），武器层必须跟着它走，
-                //   否则枪会以玩家原点为基准、和人物错位。
-                //   角色精灵是 2× 缩放的（32px 世界），所以这个世界坐标也要 ×2。
-                _weaponVisual.Position = _sprite.Offset * 2.0f;
-                _weaponVisual.SetDirection(direction);
-                _weaponVisual.SetFlip(flip);
-            }
-        }
+        UpdateWeaponLayer(direction, flip);
 
         _animTime += delta;
         if (_sprite.Hframes > 0)
@@ -937,6 +1029,29 @@ public partial class Player : CharacterBody2D, IDamageable
             int raw = (int)(_animTime * PlayerAnimFps);
             _sprite.Frame = _oneShot ? Mathf.Min(raw, _sprite.Hframes - 1) : raw % _sprite.Hframes;
         }
+    }
+
+    /// <summary>武器叠层的朝向 / 摆法（360° 自由旋转或三方向固定偏移）。</summary>
+    private void UpdateWeaponLayer(string direction, bool flip)
+    {
+        if (_weaponVisual == null) return;
+
+        if (WeaponFollowAim360)
+        {
+            // 武器脱离「角色朝向」，改成绕握持点自由旋转（泰拉瑞亚式）
+            _weaponVisual.Style = WeaponVisual.AimStyle.Rotate360;
+            _weaponVisual.AimAt(GetAimDirection());
+            return;
+        }
+
+        // 旧表现：按 down / up / side 三方向贴图 + 固定偏移
+        _weaponVisual.Style = WeaponVisual.AimStyle.Directional;
+        // ★ 角色精灵自己有 Offset（脚底对齐用的），武器层必须跟着它走，
+        //   否则枪会以玩家原点为基准、和人物错位。
+        //   角色精灵是 2× 缩放的（32px 世界），所以这个世界坐标也要 ×2。
+        _weaponVisual.Position = _sprite.Offset * 2.0f;
+        _weaponVisual.SetDirection(direction);
+        _weaponVisual.SetFlip(flip);
     }
 
     public override void _Process(double delta)
@@ -1005,8 +1120,12 @@ public partial class Player : CharacterBody2D, IDamageable
         // UI 面板打开时屏蔽开火（面板里的左键点击不该同时射击）
         if (!_uiBlocking)
         {
+            // 子弹从**枪口**出膛（ZS 素材取 brake 槽位置），没有武器视觉层才退回固定标记
+            Vector2 muzzle = _weaponVisual != null && IsRangedActive
+                ? _weaponVisual.MuzzleGlobal
+                : _muzzle.GlobalPosition;
             _weapon.HandleTrigger(
-                _muzzle.GlobalPosition,
+                muzzle,
                 aimDir,
                 CurrentSpread,
                 Input.IsActionPressed("shoot"),
@@ -1020,7 +1139,11 @@ public partial class Player : CharacterBody2D, IDamageable
 
     /// <summary>**真的射出一发**才播后坐 + 枪口火焰（空仓 / 冷却中 / 换弹中都不会播）。</summary>
     private void OnWeaponFired(Vector2 from, Vector2 direction)
-        => _weaponVisual?.PlayShoot();
+    {
+        _weaponVisual?.PlayShoot();
+        var g = _weapon?.GunData;
+        Recoil.OnShot(g != null ? g.RecoilPerShot : CombatTuning.RecoilMoveErgoWeight);
+    }
 
     /// <summary>**真的开始换弹**才播换弹动作（弹匣已满 / 没备弹时 Weapon 不会发这个信号）。</summary>
     private void OnReloadStarted()
@@ -1076,7 +1199,7 @@ public partial class Player : CharacterBody2D, IDamageable
         CurrentSpread = Mathf.Lerp(
             WeaponMods.Inaccuracy(WeaponMods.Active, g),
             WeaponMods.AimInaccuracy(WeaponMods.Active, g),
-            _aimProgress) + _moveBonus;
+            _aimProgress) + _moveBonus + Recoil.ExtraSpreadDegrees;
     }
 
     /// <summary>
@@ -1107,13 +1230,52 @@ public partial class Player : CharacterBody2D, IDamageable
 
     // ---------- 受伤 / 死亡 ----------
 
-    public void TakeDamage(float amount)
+    /// <summary>回血（医疗品 / 调试用），不超过上限。</summary>
+    public void Heal(float amount)
+    {
+        if (IsDead || amount <= 0.0f) return;
+        Health = Mathf.Min(MaxHealth, Health + amount);
+        EventBus.Instance.EmitSignal(EventBus.SignalName.PlayerHealthChanged, Health, MaxHealth);
+    }
+
+    /// <summary>无穿透信息的伤害（近战 / 摔落）→ 穿透按 0 算，护甲几乎必挡。</summary>
+    public void TakeDamage(float amount) => TakeHit(amount, 0.0f);
+
+    /// <summary>
+    /// 受伤：先过护甲（<see cref="ArmorService"/>，公式照 ZS），剩下的才扣血。
+    /// <paramref name="penetration"/> 是来袭伤害的穿透值（武器 / 敌人决定）。
+    /// </summary>
+    public void TakeHit(float amount, float penetration)
     {
         if (IsDead) return;
-        Health -= amount;
+
+        float final = amount;
+        var armor = Equipment.Get(ArmorSlot);
+        var data = armor?.Data;
+        if (data is { IsUsableArmor: true })
+        {
+            float dur = armor.Durability;
+            var result = ArmorService.Absorb(amount, penetration, data.ArmorClass,
+                data.ArmorDurDamage, ref dur, (float)GD.RandRange(0.0, 1.0));
+            armor.Durability = dur;
+            final = result.Damage;
+            EmitArmorState();
+        }
+
+        Health -= final;
         EventBus.Instance.EmitSignal(EventBus.SignalName.PlayerHealthChanged, Health, MaxHealth);
         if (Health <= 0.0f)
             Die();
+    }
+
+    /// <summary>把护甲 / 头盔状态广播给 HUD（名字 + 耐久），UI 因此不需要引用 Player。</summary>
+    private void EmitArmorState()
+    {
+        var body = Equipment.Get(ArmorSlot);
+        var helmet = Equipment.Get(HelmetSlot);
+        EventBus.Instance.EmitSignal(EventBus.SignalName.PlayerArmorChanged,
+            body?.Data?.Name ?? "", body?.Durability ?? -1.0f, body?.Data?.MaxDurability ?? 100.0f,
+            helmet?.Data?.Name ?? "", helmet?.Durability ?? -1.0f, helmet?.Data?.MaxDurability ?? 100.0f);
     }
 
     /// <summary>死亡：搜打撤不重生。本局结束，短暂停留后回主菜单。</summary>
@@ -1129,3 +1291,11 @@ public partial class Player : CharacterBody2D, IDamageable
         SceneManager.Instance.GotoMainMenu();
     }
 }
+
+
+
+
+
+
+
+

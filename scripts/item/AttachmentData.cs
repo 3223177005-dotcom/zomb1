@@ -19,6 +19,30 @@ public partial class AttachmentData : Resource
 	/// <summary>这个配件改的所有属性（每条一项）。</summary>
 	[Export] public Godot.Collections.Array<AttachmentModifier> Modifiers { get; set; } = new();
 
+	// ---------- 移植自 ZS 的兼容性 / 改装限制三项 ----------
+
+	/// <summary>通用件（ZS 的 <c>weapon_all</c>）：为真时不看 <see cref="WeaponIds"/>。</summary>
+	[Export] public bool AllWeapons { get; set; } = true;
+
+	/// <summary>允许装配的武器 id 白名单（<see cref="AllWeapons"/> 为假时生效）。</summary>
+	[Export] public Godot.Collections.Array<string> WeaponIds { get; set; } = new();
+
+	/// <summary>能否在行动（raid）中现场改装（ZS 的 <c>moddable_in_raid</c>）。</summary>
+	[Export] public bool CanModInRaid { get; set; } = true;
+
+	/// <summary>
+	/// 能不能装到这把枪上（ZS 的 <c>item_mod_fits_weapon</c>）：
+	/// 通用件一律通过；否则看白名单里有没有这个武器 id。
+	/// </summary>
+	public bool FitsWeapon(string weaponId)
+	{
+		if (AllWeapons) return true;
+		if (string.IsNullOrWhiteSpace(weaponId) || WeaponIds == null) return false;
+		foreach (var id in WeaponIds)
+			if (id == weaponId) return true;
+		return false;
+	}
+
 	/// <summary>数据是否合法（槽类型合法 + 每条修正的属性名合法）。</summary>
 	public bool IsValid
 	{

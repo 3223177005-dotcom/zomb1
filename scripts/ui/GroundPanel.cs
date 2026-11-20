@@ -31,8 +31,10 @@ public partial class GroundPanel : CanvasLayer
     public override void _Ready()
     {
         _root = GetNode<Control>("Root");
+        _root.AddThemeStyleboxOverride("panel", UiStyle.PanelOuter());
         // 用「场景唯一名」取节点：版面是容器化的，嵌套路径会随布局改动而变
         _title = GetNode<Label>("%Title");
+        _title.AddThemeColorOverride("font_color", UiStyle.AmberHeader);
         _list = GetNode<VBoxContainer>("%List");
 
         SetOpen(false);

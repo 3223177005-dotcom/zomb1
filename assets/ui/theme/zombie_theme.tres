@@ -1,0 +1,123 @@
+[gd_resource type="Theme" load_steps=9 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/panel_outer.png" id="1_outer"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/panel_region.png" id="2_region"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/slot_normal.png" id="3_slot"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/slot_hover.png" id="4_hover"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/slot_pressed.png" id="5_pressed"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/bar_bg.png" id="6_barbg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/bar_armor.png" id="7_barfill"]
+
+[sub_resource type="StyleBoxTexture" id="sb_outer"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+texture = ExtResource("1_outer")
+texture_margin_left = 6.0
+texture_margin_top = 6.0
+texture_margin_right = 6.0
+texture_margin_bottom = 6.0
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
+
+[sub_resource type="StyleBoxTexture" id="sb_region"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+texture = ExtResource("2_region")
+texture_margin_left = 6.0
+texture_margin_top = 6.0
+texture_margin_right = 6.0
+texture_margin_bottom = 6.0
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
+
+[sub_resource type="StyleBoxTexture" id="sb_slot"]
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+texture = ExtResource("3_slot")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
+
+[sub_resource type="StyleBoxTexture" id="sb_slot_hover"]
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+texture = ExtResource("4_hover")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
+
+[sub_resource type="StyleBoxTexture" id="sb_slot_pressed"]
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+texture = ExtResource("5_pressed")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
+
+[sub_resource type="StyleBoxTexture" id="sb_bar_bg"]
+texture = ExtResource("6_barbg")
+texture_margin_left = 3.0
+texture_margin_top = 3.0
+texture_margin_right = 3.0
+texture_margin_bottom = 3.0
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
+
+[sub_resource type="StyleBoxTexture" id="sb_bar_fill"]
+texture = ExtResource("7_barfill")
+texture_margin_left = 3.0
+texture_margin_top = 3.0
+texture_margin_right = 3.0
+texture_margin_bottom = 3.0
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
+
+[resource]
+Button/colors/font_color = Color(0.15, 0.13, 0.10, 1)
+Button/colors/font_disabled_color = Color(0.52, 0.47, 0.39, 1)
+Button/colors/font_focus_color = Color(0.48, 0.18, 0.12, 1)
+Button/colors/font_hover_color = Color(0.10, 0.08, 0.06, 1)
+Button/colors/font_pressed_color = Color(0.48, 0.18, 0.12, 1)
+Button/font_sizes/font_size = 14
+Button/styles/disabled = SubResource("sb_slot")
+Button/styles/focus = SubResource("sb_slot")
+Button/styles/hover = SubResource("sb_slot_hover")
+Button/styles/normal = SubResource("sb_slot")
+Button/styles/pressed = SubResource("sb_slot_pressed")
+Label/colors/font_color = Color(0.15, 0.13, 0.10, 1)
+Label/font_sizes/font_size = 16
+Panel/styles/panel = SubResource("sb_outer")
+PanelContainer/styles/panel = SubResource("sb_region")
+PopupMenu/colors/font_color = Color(0.15, 0.13, 0.10, 1)
+PopupMenu/colors/font_disabled_color = Color(0.52, 0.47, 0.39, 1)
+PopupMenu/colors/font_hover_color = Color(0.10, 0.08, 0.06, 1)
+PopupMenu/font_sizes/font_size = 14
+PopupMenu/styles/panel = SubResource("sb_outer")
+PopupMenu/styles/hover = SubResource("sb_slot_hover")
+PopupMenu/styles/separator = SubResource("sb_bar_bg")
+ProgressBar/styles/background = SubResource("sb_bar_bg")
+ProgressBar/styles/fill = SubResource("sb_bar_fill")
+RichTextLabel/colors/default_color = Color(0.15, 0.13, 0.10, 1)
+RichTextLabel/font_sizes/normal_font_size = 16
+TooltipLabel/colors/font_color = Color(0.15, 0.13, 0.10, 1)
+TooltipLabel/font_sizes/font_size = 14
+TooltipPanel/styles/panel = SubResource("sb_outer")

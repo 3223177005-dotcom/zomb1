@@ -176,8 +176,16 @@ public partial class ItemDatabase : Node
                 GD.PushWarning($"ItemDatabase: 物品 '{id}' 的 CategoryDataPath 不存在：{categoryDataPath}");
         }
 
-        if (!string.IsNullOrEmpty(data.IconPath) && ResourceLoader.Exists(data.IconPath))
+        // ZS 素材：能对上就优先用 ZS 的图标（不改 items.json，见 scripts/weapon/ZsArt.cs）
+        string zsIcon = ZsArt.IconOverride(id, data.Category == ItemCategory.Attachment);
+        if (!string.IsNullOrEmpty(zsIcon))
+        {
+            data.Icon = GD.Load<Texture2D>(zsIcon);
+        }
+        else if (!string.IsNullOrEmpty(data.IconPath) && ResourceLoader.Exists(data.IconPath))
+        {
             data.Icon = GD.Load<Texture2D>(data.IconPath);
+        }
 
         if (!data.IsValid(out string reason))
         {

@@ -1,27 +1,29 @@
 using Godot;
+using System.Collections.Generic;
+
 /// <summary>
-/// Demo 地图的**布局定义**（纯数据，不碰节点）。
+/// 野外地图（模仿 ZS 的露天场景）：大片草地 + 土路 + 几间房子 + 树。
 ///
-/// 48×32 格，每格 **32px**（D2：世界格从 16 升到 32）= **1536×1024 世界单位**，原点居中在 (-768, -512)。
-/// 布局：一幅十字街道 + 四栋**可进入**的建筑（砖墙包围、木地板 / 瓷砖地面、各开一个门）。
+/// 分工：
+///   · 这里只决定**每格是什么地形**，以及**树长在哪几格**（<see cref="Trees"/>）；
+///   · 地形贴图由 <c>Game</c> 按图集铺；树由 <c>WorldProps</c> 变成实体（带碰撞）。
 ///
-/// 用矩形定义而不是 ASCII 字符画 —— 少打错、好调。
-/// 将来要接真正的关卡编辑，把 <see cref="Build"/> 换成读文件即可。
+/// 尺寸 60×40 格 × 32px = 1920×1280 世界单位，原点居中，与 <c>Game.WorldBounds</c> 一致。
 /// </summary>
 public static class MapLayout
 {
     /// <summary>地图宽（格）。</summary>
-    public const int Width = 48;
+    public const int Width = 60;
 
     /// <summary>地图高（格）。</summary>
-    public const int Height = 32;
+    public const int Height = 40;
 
     /// <summary>地形种类。顺序与图集格子的顺序一致（见 <see cref="AtlasIndex"/>）。</summary>
     public enum Terrain
     {
-        Street = 0,        // 柏油路
+        Street = 0,        // 沥青路
         Dirt = 1,          // 泥土
-        Grass = 2,         // 草地
+        Grass = 2,         // 草地（野外主色）
         WoodFloor = 3,     // 木地板
         TiledFloor = 4,    // 瓷砖地面
         BrickWall = 5,     // 砖墙（实心）
@@ -29,51 +31,84 @@ public static class MapLayout
         Rubble = 7,        // 瓦砾
     }
 
-    /// <summary>图集里第几格（横排，每格 16×16）。</summary>
+    /// <summary>图集里第几格（行）。</summary>
     public static int AtlasIndex(Terrain terrain) => (int)terrain;
 
     /// <summary>是不是实心（挡人、挡子弹、挡寻路）。</summary>
     public static bool IsSolid(Terrain terrain)
         => terrain is Terrain.BrickWall or Terrain.ConcreteWall;
 
+    /// <summary>树的位置（格坐标）。由 <c>WorldProps</c> 换成实体。</summary>
+    public static readonly List<Vector2I> Trees = new();
+
     /// <summary>生成整张地图。</summary>
     public static Terrain[,] Build()
     {
         var map = new Terrain[Width, Height];
 
-        // 底色：泥土
-        Fill(map, 0, 0, Width, Height, Terrain.Dirt);
+        // 野外底：全是草地
+        Fill(map, 0, 0, Width, Height, Terrain.Grass);
 
-        // 几片草地
-        Fill(map, 1, 1, 18, 2, Terrain.Grass);
-        Fill(map, 29, 1, 18, 2, Terrain.Grass);
-        Fill(map, 1, 12, 18, 2, Terrain.Grass);
-        Fill(map, 29, 12, 18, 2, Terrain.Grass);
-        Fill(map, 1, 29, 46, 2, Terrain.Grass);
+        // 泥土小径（把三间房和主干连起来）
+        Fill(map, 0, 18, Width, 3, Terrain.Dirt);      // 横向主路
+        Fill(map, 28, 0, 3, Height, Terrain.Dirt);     // 纵向主路
+        Fill(map, 12, 21, 3, 12, Terrain.Dirt);        // 通往南边房子
+        Fill(map, 40, 8, 3, 12, Terrain.Dirt);         // 通往北边房子
 
-        // 十字街道（竖街 x=21..26，横街 y=14..17）
-        Fill(map, 21, 0, 6, Height, Terrain.Street);
-        Fill(map, 0, 14, Width, 4, Terrain.Street);
+        // 三间房（ZS 的野外也有零散民房）
+        BuildRoom(map, 6, 5, 12, 8, Terrain.WoodFloor, doorOnTop: false);
+        BuildRoom(map, 41, 6, 13, 9, Terrain.TiledFloor, doorOnTop: false);
+        BuildRoom(map, 34, 24, 12, 8, Terrain.WoodFloor, doorOnTop: true);
 
-        // 瓦砾堆（掩体感）
-        Fill(map, 18, 19, 2, 5, Terrain.Rubble);
-        Fill(map, 28, 19, 2, 5, Terrain.Rubble);
-        Fill(map, 18, 4, 3, 3, Terrain.Rubble);
-        Fill(map, 28, 4, 3, 3, Terrain.Rubble);
+        // 零散瓦砾（废墟感）
+        Fill(map, 20, 6, 3, 3, Terrain.Rubble);
+        Fill(map, 47, 28, 4, 3, Terrain.Rubble);
+        Fill(map, 8, 30, 3, 4, Terrain.Rubble);
 
-        // 四栋可进入的建筑（第三个参数决定门开在上面还是下面）
-        BuildRoom(map, 3, 3, 15, 9, Terrain.WoodFloor, doorOnTop: false);    // 左上：木地板
-        BuildRoom(map, 30, 3, 15, 9, Terrain.TiledFloor, doorOnTop: false);  // 右上：瓷砖
-        BuildRoom(map, 3, 20, 15, 9, Terrain.WoodFloor, doorOnTop: true);    // 左下：木地板
-        BuildRoom(map, 30, 20, 15, 9, Terrain.TiledFloor, doorOnTop: true);  // 右下：瓷砖
-
-        // 地图外框（混凝土墙，把玩家关在场内）
+        // 一圈矮墙当地图边界
         Frame(map, 1, Terrain.ConcreteWall);
 
+        BuildTrees(map);
         return map;
     }
 
-    // ---------- 绘制工具 ----------
+    /// <summary>
+    /// 撒树：只长在草地上、周围一圈都是草地、彼此不挨着；固定种子 → 每次进游戏一致。
+    /// 位置同时记进 <see cref="Trees"/> 给 <c>WorldProps</c> 建实体。
+    /// </summary>
+    private static void BuildTrees(Terrain[,] map)
+    {
+        Trees.Clear();
+        var rng = new RandomNumberGenerator { Seed = 20260115 };
+
+        for (int y = 2; y < Height - 2; y++)
+        {
+            for (int x = 2; x < Width - 2; x++)
+            {
+                if (map[x, y] != Terrain.Grass) continue;
+                if (!AllGrassAround(map, x, y)) continue;
+                if (rng.Randf() > 0.10f) continue;
+                if (TooCloseToTree(x, y)) continue;
+
+                Trees.Add(new Vector2I(x, y));
+            }
+        }
+    }
+
+    private static bool AllGrassAround(Terrain[,] map, int x, int y)
+    {
+        for (int dy = -1; dy <= 1; dy++)
+            for (int dx = -1; dx <= 1; dx++)
+                if (map[x + dx, y + dy] != Terrain.Grass) return false;
+        return true;
+    }
+
+    private static bool TooCloseToTree(int x, int y)
+    {
+        foreach (var t in Trees)
+            if (Mathf.Abs(t.X - x) <= 1 && Mathf.Abs(t.Y - y) <= 1) return true;
+        return false;
+    }
 
     private static void Fill(Terrain[,] map, int x, int y, int w, int h, Terrain terrain)
     {
@@ -96,22 +131,22 @@ public static class MapLayout
         Fill(map, Width - thickness, 0, thickness, Height, terrain);
     }
 
-    /// <summary>画一间房：铺地板 → 四周围砖墙 → 在朝街那侧开一个两格宽的门。</summary>
+    /// <summary>画一间房：铺地板 → 四周砌墙 → 在朝路那侧开一个两格宽的门。</summary>
     private static void BuildRoom(Terrain[,] map, int x, int y, int w, int h, Terrain floor, bool doorOnTop)
     {
         Fill(map, x, y, w, h, floor);
 
-        Fill(map, x, y, w, 1, Terrain.BrickWall);              // 上
-        Fill(map, x, y + h - 1, w, 1, Terrain.BrickWall);      // 下
-        Fill(map, x, y, 1, h, Terrain.BrickWall);              // 左
-        Fill(map, x + w - 1, y, 1, h, Terrain.BrickWall);      // 右
+        Fill(map, x, y, w, 1, Terrain.BrickWall);
+        Fill(map, x, y + h - 1, w, 1, Terrain.BrickWall);
+        Fill(map, x, y, 1, h, Terrain.BrickWall);
+        Fill(map, x + w - 1, y, 1, h, Terrain.BrickWall);
 
         int doorX = x + w / 2 - 1;
         Fill(map, doorX, doorOnTop ? y : y + h - 1, 2, 1, floor);
     }
 
     /// <summary>
-    /// 4 位邻居掩码：上=1 右=2 下=4 左=8。**同种地形**（或同为实心墙）才算连通。
+    /// 4 位邻居掩码：上 1 右 2 下 4 左 8。**同种地形**（或同为实心墙）才算连通。
     /// </summary>
     public static int MaskAt(Terrain[,] map, int x, int y)
     {
@@ -133,16 +168,9 @@ public static class MapLayout
 
         var other = map[x, y];
         if (other == self) return true;
-
-        // 两种实心墙互相连通，避免砖墙/水泥墙交界多出暗边
-        return IsSolid(self) && IsSolid(other);
+        return IsSolid(other) && IsSolid(self);
     }
 
-    /// <summary>
-    /// 自动拼接图集坐标：<c>X = 邻居掩码 0..15</c>，<c>Y = 地形序号 0..7</c>。
-    /// （图集见 <c>assets/sprites/tiles/terrain_atlas.png</c>，**512x256** = 16 掩码 × 8 地形 × 32px）
-    /// </summary>
     public static Vector2I AtlasCoords(Terrain[,] map, int x, int y)
         => new Vector2I(MaskAt(map, x, y), (int)map[x, y]);
-
 }

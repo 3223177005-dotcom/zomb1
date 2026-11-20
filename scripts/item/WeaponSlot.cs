@@ -16,8 +16,23 @@ public sealed class WeaponSlot
         SlotType = slotType;
     }
 
+    /// <summary>从数据层建槽（带上挂点 / 必装标记）。</summary>
+    public WeaponSlot(WeaponSlotData data) : this(data?.SlotType ?? SlotTypes.Muzzle)
+    {
+        Source = data;
+    }
+
     /// <summary>槽类型，取值见 <see cref="SlotTypes"/>。</summary>
     public string SlotType { get; }
+
+    /// <summary>数据层定义（可能为 null：直接按类型字符串建槽时）。</summary>
+    public WeaponSlotData Source { get; }
+
+    /// <summary>必装槽：为真时不能被拆空（ZS 的 mods[slot].needed）。</summary>
+    public bool Needed => Source?.Needed ?? false;
+
+    /// <summary>挂点比例（数据优先，否则槽类型默认值）。</summary>
+    public Vector2 MountFraction => Source?.MountFraction ?? SlotTypes.DefaultMount(SlotType);
 
     /// <summary>装着的配件（null = 空槽）。</summary>
     public ItemStack Installed { get; set; }

@@ -23,7 +23,22 @@ public partial class GridItemBlock : Control
 
     private bool _revealed = true;
 
-    private static readonly Color TextDim = new(0.45f, 0.46f, 0.50f);
+    private static readonly Color TextDim = new(0.38f, 0.34f, 0.28f);
+
+    /// <summary>底部每条带（名字 / 数量角标）的高度（像素）。</summary>
+    private const float BandHeight = 16.0f;
+
+    /// <summary>底部给耐久细条留的高度（像素）。</summary>
+    private const float StripZone = 8.0f;
+
+    /// <summary>数量角标占的宽度（像素）。</summary>
+    private const float BadgeWidth = 34.0f;
+
+    /// <summary>数量角标：浅底上用深炭墨字。</summary>
+    private static readonly Color BadgeColor = new(0.16f, 0.13f, 0.10f);
+
+    /// <summary>**浅色**描边：深色字压在深色武器图标上时，靠它衬出一圈羊皮纸白边。</summary>
+    private static readonly Color OutlineColor = new(0.95f, 0.92f, 0.84f, 0.92f);
 
     public override void _Ready()
     {
@@ -47,10 +62,10 @@ public partial class GridItemBlock : Control
 
     private void BuildUnknown()
     {
-        // 进度：从下往上填的紫色底纹（单格物品太小时，细条几乎看不见）
+        // 进度：从下往上填的暗琥珀铜底纹（单格物品太小时，细条几乎看不见）
         Progress = new ColorRect
         {
-            Color = new Color(0.55f, 0.38f, 0.82f, 0.45f),
+            Color = new Color(0.52f, 0.38f, 0.18f, 0.38f),
             Position = new Vector2(1, Size.Y - 1),
             Size = new Vector2(Size.X - 2, 0),
             MouseFilter = MouseFilterEnum.Ignore,
@@ -66,10 +81,40 @@ public partial class GridItemBlock : Control
             VerticalAlignment = VerticalAlignment.Center,
             MouseFilter = MouseFilterEnum.Ignore,
         };
-        question.AddThemeFontSizeOverride("font_size", 20);
+        question.AddThemeFontSizeOverride("font_size", UiMetrics.FontSubtitle);
         question.AddThemeColorOverride("font_color", TextDim);
         AddChild(question);   // 画在进度底纹**上面**
         RefreshProgress();
+    }
+
+    /// <summary>
+    /// 图标框：**占满格块主体并居中**（等比，不固定 32）—— ZS 的枪图标是 80×32、
+    /// 配件是 32×16，固定 32 的方框会把它们缩成一条细缝（旧 bug：背包图标过小）。
+    /// 名字 / 角标 / 耐久条各占一条底部带，由 <see cref="BuildItem"/> 扣掉高度后传进来。
+    /// </summary>
+    private TextureRect BuildIcon(ItemData data, Rect2 inner)
+    {
+        var icon = new TextureRect
+        {
+            Texture = data.Icon,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            MouseFilter = MouseFilterEnum.Ignore,
+            Position = inner.Position,
+            Size = inner.Size,
+        };
+
+        // 旋转过的物品：图标框按**宽高交换**后居中，再绕自身中心转 90°，
+        // 正好覆盖回格块内区（否则整块会被转出格位外面）。
+        if (Stack.Rotated)
+        {
+            var swapped = new Vector2(inner.Size.Y, inner.Size.X);
+            icon.Size = swapped;
+            icon.Position = inner.Position + (inner.Size - swapped) * 0.5f;
+            icon.PivotOffset = swapped * 0.5f;
+            icon.Rotation = Mathf.Pi * 0.5f;
+        }
+        return icon;
     }
 
     private void BuildItem()
@@ -77,59 +122,64 @@ public partial class GridItemBlock : Control
         var data = Stack?.Data;
         if (data == null) return;
 
-        // 够宽的块（≥ 2 格）图标靠左、名字靠右；单格块只放图标（名字看悬停提示）
-        bool wide = Size.X >= 64.0f;
-        var inner = new Rect2(Vector2.Zero, Size).Grow(-3);
+        bool hasBadge = Stack.Count > 1;
 
-        var icon = new TextureRect
+        // 底部只留「耐久条区 + 数量角标区」：格块内**不印物品名**（名字看悬停提示）
+        float stripZone = Stack.HasDurability ? StripZone : 3.0f;
+        float bandBottom = Size.Y - stripZone;
+        float bandTop = bandBottom - BandHeight;
+
+        // 图标占满格块（角标会压在图标上，带浅色描边所以仍清晰）
+        var inner = new Rect2(
+            new Vector2(3.0f, 3.0f),
+            new Vector2(Size.X - 6.0f, Mathf.Max(8.0f, bandBottom - 3.0f)));
+
+        AddChild(BuildIcon(data, inner));
+        if (hasBadge) AddChild(BuildCountBadge(Stack.Count, bandTop));
+        if (Stack.HasDurability) AddDurabilityStrip();
+    }
+
+    /// <summary>数量角标：**单格物品（绷带 / 弹药）也要显示**，否则看不出叠了几个。</summary>
+    private Label BuildCountBadge(int count, float top)
+    {
+        var badge = new Label
         {
-            Texture = data.Icon,
-            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-            MouseFilter = MouseFilterEnum.Ignore,
-        };
-
-        Vector2 iconSize;
-        if (wide)
-        {
-            float side = Mathf.Min(inner.Size.Y, 32.0f);   // 32 = 图标源尺寸，1:1 不缩放
-            iconSize = new Vector2(side, side);
-            icon.Position = new Vector2(inner.Position.X, inner.Position.Y + (inner.Size.Y - side) * 0.5f);
-        }
-        else
-        {
-            // 格子 40 - 边框 2 - 内边距 6 = 32，正好等于图标源尺寸
-            float side = Mathf.Min(inner.Size.X, inner.Size.Y);
-            side = Mathf.Max(8.0f, side);
-            iconSize = new Vector2(side, side);
-            icon.Position = inner.Position + (inner.Size - iconSize) * 0.5f;
-        }
-
-        icon.Size = iconSize;
-        if (Stack.Rotated)
-        {
-            icon.PivotOffset = iconSize * 0.5f;
-            icon.Rotation = Mathf.Pi * 0.5f;
-        }
-        AddChild(icon);
-
-        if (!wide) return;
-
-        string text = data.Name;
-        if (Stack.Count > 1) text += $" ×{Stack.Count}";
-
-        var label = new Label
-        {
-            Text = text,
-            Position = new Vector2(icon.Position.X + iconSize.X + 4, 1),
-            Size = new Vector2(Size.X - (icon.Position.X + iconSize.X + 4) - 3, Size.Y - 2),
+            Text = $"×{count}",
+            Position = new Vector2(Size.X - BadgeWidth - 4.0f, top),
+            Size = new Vector2(BadgeWidth, BandHeight),
+            HorizontalAlignment = HorizontalAlignment.Right,
             VerticalAlignment = VerticalAlignment.Center,
-            ClipText = true,
             MouseFilter = MouseFilterEnum.Ignore,
         };
-        label.AddThemeFontSizeOverride("font_size", 11);
-        label.AddThemeColorOverride("font_color", UiStyle.ItemText(data));
-        AddChild(label);
+        badge.AddThemeFontSizeOverride("font_size", UiMetrics.FontTiny);
+        badge.AddThemeColorOverride("font_color", BadgeColor);
+        badge.AddThemeColorOverride("font_outline_color", OutlineColor);
+        badge.AddThemeConstantOverride("outline_size", 3);
+        return badge;
+    }
+
+    /// <summary>底部耐久细条（凹槽 + 按耐久比例填色），背包里的备用甲一眼看出损耗。</summary>
+    private void AddDurabilityStrip()
+    {
+        float width = Mathf.Max(4.0f, Size.X - 16.0f);
+        float top = Size.Y - 7.0f;
+        float ratio = Mathf.Clamp(Stack.DurabilityRatio, 0.0f, 1.0f);
+
+        AddChild(new ColorRect
+        {
+            Color = new Color(0.42f, 0.38f, 0.31f, 0.90f),
+            Position = new Vector2(8.0f, top),
+            Size = new Vector2(width, 3.0f),
+            MouseFilter = MouseFilterEnum.Ignore,
+        });
+
+        AddChild(new ColorRect
+        {
+            Color = UiStyle.DurabilityColor(ratio, Stack.IsBroken),
+            Position = new Vector2(8.0f, top),
+            Size = new Vector2(Mathf.Max(1.0f, width * ratio), 3.0f),
+            MouseFilter = MouseFilterEnum.Ignore,
+        });
     }
 
     public override void _Draw()
@@ -137,20 +187,26 @@ public partial class GridItemBlock : Control
         var rect = new Rect2(Vector2.Zero, Size);
 
         var fill = _revealed
-            ? new Color(0.14f, 0.15f, 0.19f, 0.95f)
-            : new Color(0.10f, 0.10f, 0.13f, 0.95f);
+            ? new Color(0.88f, 0.84f, 0.75f, 0.96f)
+            : new Color(0.64f, 0.59f, 0.50f, 0.96f);
         DrawRect(rect, fill, true);
 
         Color line;
-        if (!_revealed) line = new Color(0.28f, 0.26f, 0.34f, 1.0f);
+        if (!_revealed) line = new Color(0.38f, 0.34f, 0.28f, 1.0f);
         else if (Stack?.Data != null)
         {
             var c = UiStyle.ItemText(Stack.Data);
             line = new Color(c.R, c.G, c.B, 0.85f);
         }
-        else line = new Color(0.3f, 0.3f, 0.34f, 1.0f);
+        else line = new Color(0.42f, 0.38f, 0.31f, 1.0f);
 
         DrawRect(rect, line, false, 2);
+        // 像素战术角标（左上与右下各画 L 型亮色折角）
+        var corner = new Color(Mathf.Min(1f, line.R * 1.25f), Mathf.Min(1f, line.G * 1.25f), Mathf.Min(1f, line.B * 1.25f), 0.95f);
+        DrawRect(new Rect2(2, 2, 5, 2), corner, true);
+        DrawRect(new Rect2(2, 2, 2, 5), corner, true);
+        DrawRect(new Rect2(Size.X - 7, Size.Y - 4, 5, 2), corner, true);
+        DrawRect(new Rect2(Size.X - 4, Size.Y - 7, 2, 5), corner, true);
     }
 
     /// <summary>按 <see cref="GridPanel.RevealProgress"/> 更新进度底纹（不重建节点）。</summary>

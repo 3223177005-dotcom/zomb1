@@ -25,7 +25,7 @@ public partial class ResultPanel : Control
         Visible = false;
         ZIndex = 200;
 
-        AddChild(new ColorRect { Color = new Color(0.02f, 0.03f, 0.02f, 0.82f) });
+        AddChild(new ColorRect { Color = new Color(0.10f, 0.08f, 0.06f, 0.72f) });
         GetChild<ColorRect>(0).SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
         var center = new CenterContainer { MouseFilter = MouseFilterEnum.Pass };
@@ -33,19 +33,7 @@ public partial class ResultPanel : Control
         center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
         _card = new PanelContainer { CustomMinimumSize = new Vector2(560, 420) };
-        _card.AddThemeStyleboxOverride("panel", new StyleBoxFlat
-        {
-            BgColor = new Color(0.06f, 0.09f, 0.07f, 0.99f),
-            BorderColor = new Color(0.35f, 0.85f, 0.50f, 0.95f),
-            BorderWidthLeft = 2,
-            BorderWidthRight = 2,
-            BorderWidthTop = 2,
-            BorderWidthBottom = 2,
-            CornerRadiusTopLeft = 3,
-            CornerRadiusTopRight = 3,
-            CornerRadiusBottomLeft = 3,
-            CornerRadiusBottomRight = 3,
-        });
+        _card.AddThemeStyleboxOverride("panel", UiStyle.PanelOuter());
         center.AddChild(_card);
 
         var margin = new MarginContainer();
@@ -61,7 +49,7 @@ public partial class ResultPanel : Control
 
         var title = new Label { Text = "撤离成功" };
         title.AddThemeFontSizeOverride("font_size", 26);
-        title.AddThemeColorOverride("font_color", new Color(0.45f, 1.0f, 0.62f));
+        title.AddThemeColorOverride("font_color", UiStyle.DurabilityGood);
         box.AddChild(title);
 
         box.AddChild(new HSeparator());
@@ -81,11 +69,12 @@ public partial class ResultPanel : Control
 
         _summary = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart };
         _summary.AddThemeFontSizeOverride("font_size", 16);
-        _summary.AddThemeColorOverride("font_color", new Color(0.85f, 0.90f, 0.86f));
+        _summary.AddThemeColorOverride("font_color", HudWidgets.BodyColor);
         box.AddChild(_summary);
 
         var back = new Button { Text = "返回主菜单" };
         back.AddThemeFontSizeOverride("font_size", 17);
+        UiStyle.StylePixelButton(back);
         back.Pressed += () => GetTree().ChangeSceneToFile("res://scenes/main_menu.tscn");
         box.AddChild(back);
     }
@@ -111,7 +100,7 @@ public partial class ResultPanel : Control
 
             var head = new Label { Text = label };
             head.AddThemeFontSizeOverride("font_size", 14);
-            head.AddThemeColorOverride("font_color", new Color(0.55f, 0.60f, 0.56f));
+            head.AddThemeColorOverride("font_color", UiStyle.CaptionColor);
             _list.AddChild(head);
 
             foreach (var stack in pocket.Stacks)

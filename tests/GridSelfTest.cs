@@ -15,7 +15,8 @@ public partial class GridSelfTest : Node
         GD.Print("=== 阶段 2 自测开始 ===");
 
         var db = ItemDatabase.Instance;
-        Check("items.json 载入 14 件物品", db != null && db.Count == 14, $"实际 {db?.Count}");
+        // 16 件：14 件基础物资 + armor_arman（IV 级护甲）+ helmet_steel（III 级头盔）
+        Check("items.json 载入 16 件物品", db != null && db.Count == 16, $"实际 {db?.Count}");
 
         var svd = db.GetItem("svd");
         var dagger = db.GetItem("dagger");
@@ -266,6 +267,11 @@ public partial class GridSelfTest : Node
 
         var playerScene = GD.Load<PackedScene>("res://scenes/player.tscn");
         var player = playerScene.Instantiate<Player>();
+
+        // ★ 关掉调试播种：SeedDebugArmor 会往基础口袋塞护甲 + 头盔（占 8/12 格），
+        //   那会让下面"口袋能装下 SVD / 装不下 3×3 背包"的前提不成立。
+        player.SeedDebugArmor = false;
+
         AddChild(player);
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 

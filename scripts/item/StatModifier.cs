@@ -61,6 +61,22 @@ public static class SlotTypes
         Body => "枪身",
         _ => slotType,
     };
+
+    /// <summary>
+    /// 槽位的**默认挂点**（占枪贴图宽/高的比例）。数据里 <c>WeaponSlotData.MountX/MountY</c> 有值时以数据为准。
+    /// 与 ZS 的 <c>weapon.json → mods[slot].x/y</c> 对应，只是 ZS 用像素、这里用比例（换贴图不会错位）。
+    /// </summary>
+    public static Vector2 DefaultMount(string slotType) => slotType switch
+    {
+        Muzzle => new Vector2(0.98f, 0.50f),      // 枪口：贴图右端
+        Barrel => new Vector2(0.72f, 0.50f),
+        Scope => new Vector2(0.42f, -0.08f),      // 瞄具：枪身上方
+        Grip => new Vector2(0.33f, 1.05f),        // 握把：0.35 处是握持点，往下挂
+        ExtendedMag => new Vector2(0.45f, 1.12f), // 弹匣：枪身下方中部
+        Laser1 => new Vector2(0.62f, 0.05f),
+        Laser2 => new Vector2(0.62f, 0.95f),
+        _ => new Vector2(0.40f, 0.50f),           // 枪身等：机匣处
+    };
 }
 
 /// <summary>

@@ -58,7 +58,7 @@ public static class WeaponMods
 
                 // 容量 > 1 时建出多个同类槽（当前数据一律 1）
                 for (int i = 0; i < Mathf.Max(1, slotData.Capacity); i++)
-                    created.Add(new WeaponSlot(slotData.SlotType));
+                    created.Add(new WeaponSlot(slotData));
             }
         }
 
@@ -95,6 +95,10 @@ public static class WeaponMods
         if (!data.IsValid)
             return InstallResult.Fail($"{attachment.Data.Name} 的数据不合法");
 
+        // ZS 的 item_mod_fits_weapon：配件可以只在指定武器上生效
+        if (!data.FitsWeapon(gun.Data.Id))
+            return InstallResult.Fail($"{attachment.Data.Name} 不适配 {gun.Data.Name}");
+
         if (!weapon.HasSlotOfType(data.SlotType))
             return InstallResult.Fail(
                 $"{gun.Data.Name} 没有「{SlotTypes.DisplayName(data.SlotType)}」槽");
@@ -108,13 +112,17 @@ public static class WeaponMods
 
     /// <summary>
     /// 装上配件。成功时 <paramref name="attachment"/> 会被消耗（调用方负责从原容器移除）。
+    /// <paramref name="inRaid"/> = true 时按配件的 <c>CanModInRaid</c> 判断（ZS 的 moddable_in_raid）。
     /// </summary>
-    public static InstallResult TryInstall(ItemStack gun, ItemStack attachment, out ItemStack stored)
+    public static InstallResult TryInstall(ItemStack gun, ItemStack attachment, out ItemStack stored, bool inRaid = false)
     {
         stored = null;
 
         var check = CanInstall(gun, attachment);
         if (!check.Ok) return check;
+
+        if (inRaid && !(attachment.Data.AttachmentStats?.CanModInRaid ?? true))
+            return InstallResult.Fail($"{attachment.Data.Name} 不能在行动中改装");
 
         // ★ 装进去的必须是**副本**：原对象会被调用方从背包里 RemoveFrom，
         //   数量归零后 WeaponSlot.IsEmpty 会误判成"空槽"。
@@ -124,11 +132,20 @@ public static class WeaponMods
         return check;
     }
 
-    /// <summary>卸下某个槽里的配件。</summary>
+    /// <summary>卸下某个槽里的配件。必装槽（ZS 的 needed）不能拆空，返回 null。</summary>
     public static ItemStack TryUninstall(WeaponSlot slot)
     {
         if (slot == null || slot.IsEmpty) return null;
+        if (slot.Needed) return null;
         return slot.Take();
+    }
+
+    /// <summary>某个槽类型的挂点比例（数据优先，否则槽类型默认值）—— 视觉层用。</summary>
+    public static Vector2 MountFraction(ItemStack gun, string slotType)
+    {
+        foreach (var slot in Slots(gun))
+            if (slot.SlotType == slotType) return slot.MountFraction;
+        return SlotTypes.DefaultMount(slotType);
     }
 
     /// <summary>找出装在某类槽上的配件（没有返回 null）。</summary>

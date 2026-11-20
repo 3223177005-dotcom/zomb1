@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// Stats 字典里的标准字段名。
 /// 集中定义，避免各处散落魔法字符串；也方便将来做改名/迁移。
 /// </summary>
@@ -25,6 +25,12 @@ public static class ItemStats
     public const string MaxDurability = "MaxDurability";
     /// <summary>防护等级。</summary>
     public const string ArmorClass = "ArmorClass";
+
+    /// <summary>护甲耐久损耗系数（ZS 的 dur_damage）：越高越不耐用。</summary>
+    public const string ArmorDurDamage = "ArmorDurDamage";
+
+    /// <summary>1 = 头盔（只能装头盔位）</summary>
+    public const string ArmorIsHelmet = "ArmorIsHelmet";
     /// <summary>装备槽位（Helmet / Body ...）。</summary>
     public const string Slot = "Slot";
 
@@ -50,3 +56,4 @@ public static class ItemStats
     /// <summary>弹匣容量。</summary>
     public const string MagazineSize = "MagazineSize";
 }
+

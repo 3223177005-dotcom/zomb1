@@ -54,6 +54,8 @@ public partial class Game : Node2D
         BuildTerrain();
         BuildCollision();
         MarkWalkable();
+        BuildFloorDecals();
+        BuildProps();
 
         // ───────── 以下两块都是【临时测试内容】，正式生成系统做好后整块删掉 ─────────
         SpawnDebugLoot();
@@ -107,35 +109,9 @@ public partial class Game : Node2D
         }
     }
 
-    /// <summary>
-    /// 在**四栋房间里各放一个箱子**。箱子是战利品容器（和尸体同类），区别是：
-    /// **地图加载时就生成好**（不靠谁死），而且只出**金 / 红**两档战利品。
-    /// </summary>
-    private void SpawnChests()
-    {
-        // 每个房间里挑一个角落格（避开门口和墙）
-        var chestCells = new[]
-        {
-            new Vector2I(5, 5),     // 左上（木地板）
-            new Vector2I(42, 5),    // 右上（瓷砖）
-            new Vector2I(5, 26),    // 左下（木地板）
-            new Vector2I(42, 26),   // 右下（瓷砖）
-        };
 
-        for (int i = 0; i < chestCells.Length; i++)
-        {
-            var cell = chestCells[i];
-            if (!Grid.Contains(cell)) continue;
 
-            var items = ZombieLoot.RollChest();
-            if (items.Count == 0) continue;
 
-            Items.SpawnLootSpot(cell, items);
-            AddChestSprite(cell, i);
-        }
-    }
-
-    /// <summary>用代码生成 TileSet，并把地图铺到 <see cref="TileMapLayer"/> 上。</summary>
     private void BuildTerrain()
     {
         Terrain = GetNode<TileMapLayer>("Terrain");
@@ -208,14 +184,6 @@ public partial class Game : Node2D
         }
     }
 
-    /// <summary>把实心格标给寻路。</summary>
-    private void MarkWalkable()
-    {
-        for (int y = 0; y < MapLayout.Height; y++)
-            for (int x = 0; x < MapLayout.Width; x++)
-                if (MapLayout.IsSolid(Map[x, y]))
-                    NavigationManager.Instance.MarkCellSolid(new Vector2I(x, y));
-    }
 
     /// <summary>某个世界坐标是不是实心（挡人 / 挡子弹）。</summary>
     public bool IsSolidAt(Vector2 world)
@@ -416,3 +384,7 @@ public partial class Game : Node2D
 
 
 }
+
+
+
+

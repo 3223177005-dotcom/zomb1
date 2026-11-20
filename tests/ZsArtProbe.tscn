@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/ZsArtProbe.cs" id="1"]
+
+[node name="ZsArtProbe" type="Node"]
+script = ExtResource("1")

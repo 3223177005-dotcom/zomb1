@@ -23,6 +23,9 @@ public partial class EquipmentPanel : CanvasLayer
     /// <summary>右键菜单：「改装」（只对枪有效）。</summary>
     private const int MenuIdModify = 3;
 
+    /// <summary>快捷装备位按钮里的内容层节点名（图标 / 名字 / 激活标记在 <see cref="QuickSlotView"/> 里画）。</summary>
+    private const string QuickSlotName = "QuickSlotView";
+
     /// <summary>改装面板（建在 _Ready 里，平时隐藏）。</summary>
     private ModifyPanel _modifyPanel;
 
@@ -39,6 +42,7 @@ public partial class EquipmentPanel : CanvasLayer
     }
 
     private Control _root;
+    private ColorRect _dim;
     private Button[] _slotButtons;
     private Label _bagTotal;
     private VBoxContainer _bagList;
@@ -71,6 +75,7 @@ public partial class EquipmentPanel : CanvasLayer
 
     /// <summary>搜索列当前显示了几行（调试 / 自检用）。</summary>
     public int SearchRowCount => _searchList?.GetChildCount() ?? 0;
+    private EquipArmorRows _armorRows;
     private ItemSlot _contextSlot;
     private Player _player;
     private bool _open;
@@ -78,9 +83,24 @@ public partial class EquipmentPanel : CanvasLayer
     /// <summary>面板是否处于打开状态。</summary>
     public bool IsOpen => _open;
 
+    /// <summary>
+    /// 订阅放在 **_EnterTree** 而不是 _Ready：<see cref="Game.SetupWorldZoom"/> 会把本面板
+    /// <c>Reparent</c> 到 UiLayer，那会触发一次 _ExitTree（取消订阅），而 _Ready 只跑一次 ——
+    /// 订阅写在 _Ready 里就会**永久失联**，表现是"装备了但背包格子不刷新"。
+    /// </summary>
+    public override void _EnterTree() => EventBus.Instance.InventoryChanged += OnInventoryChanged;
+
+    /// <summary>
+    /// 面板打开时压暗后面的世界与四角 HUD（遮罩本身见 <see cref="UiDimLayer"/>）。
+    /// 不加这层的话，HUD（CanvasLayer 5）会从面板（6）的半透底下面透出来，看起来很脏。
+    /// </summary>
+    private void BuildDimLayer() => _dim = UiDimLayer.Create(this);
+
     public override void _Ready()
     {
         _root = GetNode<Control>("Root");
+        _root.AddThemeStyleboxOverride("panel", UiStyle.PanelOuter());
+        BuildDimLayer();
         _slotButtons = new[]
         {
             GetNode<Button>("%Slot1"),
@@ -94,21 +114,43 @@ public partial class EquipmentPanel : CanvasLayer
         for (int i = 0; i < _slotButtons.Length; i++)
         {
             int slotIndex = i;   // 闭包捕获，必须用局部变量
+            UiStyle.StylePixelButton(_slotButtons[i]);
+            _slotButtons[i].Text = "";   // 槽里的图标 / 名字改由内容层画（见 QuickSlotView）
             _slotButtons[i].Pressed += () => OnSlotPressed(slotIndex);
             _slotButtons[i].GuiInput += e => OnEquipSlotGuiInput(slotIndex, e);
+
+            var view = new QuickSlotView { Name = QuickSlotName, SlotIndex = i };
+            _slotButtons[i].AddChild(view);
+            view.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
 
             // 拖放接收层：把背包里的武器 / 容器拖到装备槽上
             var dropTarget = new EquipDropTarget
             {
                 Name = "DropTarget",
                 SlotIndex = slotIndex,
+                // 延迟取值：建 UI 时 _player 还是 null（_Process 才解析），
+                // 固定成 KindOf() 会让背包位永远按"武器位"判定。
+                KindProvider = () => _player?.Equipment.KindOf(slotIndex) ?? EquipSlotKind.Weapon,
                 Dropped = OnEquipSlotDropped,
             };
             _slotButtons[i].AddChild(dropTarget);
             dropTarget.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         }
 
-        EventBus.Instance.InventoryChanged += OnInventoryChanged;
+        // ★ InventoryChanged 的订阅在 _EnterTree（见上），别挪回这里
+
+        // 左上角那块原先空着的区域 → 护甲 / 头盔（一上一下）
+        var armorRegion = GetNodeOrNull<PanelContainer>("%ArmorRegion");
+        if (armorRegion != null)
+        {
+            armorRegion.AddThemeStyleboxOverride("panel", UiStyle.PanelRegion());
+            _armorRows = new EquipArmorRows { Name = "ArmorRows" };
+            armorRegion.AddChild(_armorRows);
+        }
+        GetNodeOrNull<PanelContainer>("Root/Margin/Columns/Left/EquipRegion")
+            ?.AddThemeStyleboxOverride("panel", UiStyle.PanelRegion());
+        GetNodeOrNull<PanelContainer>("Root/Margin/Columns/Right/BagRegion")
+            ?.AddThemeStyleboxOverride("panel", UiStyle.PanelRegion());
 
         BuildContextMenu();
         BuildSearchColumn();
@@ -210,17 +252,14 @@ public partial class EquipmentPanel : CanvasLayer
         // 拖拽来源（一般是基础口袋或某个容器）
         var source = ItemDrag.Source ?? _player.Pocket;
 
-        // 先装备，再移除 —— 顺序反了 incoming 就被销毁了
-        var previous = _player.Equipment.Equip(slotIndex, incoming);
-        source?.RemoveFrom(incoming, 1);
-
-        // 兜底：来源不是拖拽记录的容器（或没扣掉）时，从身上再扫一遍
-        if (incoming.Count > 0 && _player.CountItem(incoming.Data.Id) > 0)
-            _player.ConsumeItem(incoming.Data.Id, 1);
-
-        // 被换下来的旧物品放回身上（剩余空间最大的口袋）
-        if (previous != null && !ReferenceEquals(previous, incoming))
-            _player.TryTake(previous, out _);
+        // 统一走 EquipService：类别校验 + 扣来源 + 旧件回收，失败时状态不变
+        if (!EquipService.TryEquip(_player.Equipment, slotIndex, incoming, source, _player.Pocket,
+                out _, out string reason))
+        {
+            GD.PushWarning($"装备失败：{reason}");
+            Refresh();
+            return;
+        }
 
         // 装到哪个槽就顺手切到那个槽
         _player.TrySetActiveSlot(slotIndex);
@@ -306,6 +345,11 @@ public partial class EquipmentPanel : CanvasLayer
         if (Input.IsActionJustPressed("inventory"))
             SetOpen(!_open);
 
+        // 面板开着时同步护甲栏（拖放/受伤都靠这条，不再依赖信号时序）
+        if (_open && _player != null)
+            _armorRows?.Sync(_player.Equipment.Get(Player.ArmorSlot),
+                _player.Equipment.Get(Player.HelmetSlot));
+
         // 搜索读条：按内容最高稀有度算出的时长推进，满了才揭示物品
         if (Searching && !_searchDone)
             AdvanceSearch((float)delta);
@@ -340,6 +384,10 @@ public partial class EquipmentPanel : CanvasLayer
         if (!open) _modifyPanel?.Close();          // 关主面板时连带关掉改装面板
 
         if (_root != null) _root.Visible = open;
+        if (_dim != null) _dim.Visible = open;
+
+        // 全屏面板一开就收起四角 HUD，避免 HUD 从面板边缘/半透底下面透出来
+        EventBus.Instance.EmitSignal(EventBus.SignalName.HudVisibleRequested, !open);
 
         // 关面板时退出行内拆分 / 搜索状态
         if (!open) { CancelSplit(); CloseSearch(); }
@@ -363,19 +411,26 @@ public partial class EquipmentPanel : CanvasLayer
 
         if (_player == null || _slotButtons == null) return;
 
+        // 左上角护甲栏：面板主动喂状态，不依赖信号（信号在节点重建后会丢订阅）
+        _armorRows?.Sync(_player.Equipment.Get(Player.ArmorSlot),
+            _player.Equipment.Get(Player.HelmetSlot));
+
         for (int i = 0; i < _slotButtons.Length; i++)
         {
             var item = _player.Equipment.Get(i);
             bool selected = _player.ActiveSlot == i;
 
-            _slotButtons[i].Text = $"[{i + 1}] {item?.Data?.Name ?? "—"}";
+            // 空槽显示槽位名（护甲 / 头盔 / 背包），比一个破折号有用
+            string empty = (_player?.Equipment.KindOf(i)) switch
+            {
+                EquipSlotKind.Armor => "护甲",
+                EquipSlotKind.Helmet => "头盔",
+                EquipSlotKind.Container => "背包",
+                _ => "—",
+            };
 
-            // ★ 物品名颜色一律取自**稀有度**；选中与否只改明暗（保留色相）
-            var color = item?.Data != null
-                ? (selected ? UiStyle.ItemText(item.Data) : UiStyle.ItemTextDimmed(item.Data))
-                : UiStyle.EmptySlotColor;
-
-            _slotButtons[i].AddThemeColorOverride("font_color", color);
+            // ★ 图标 / 名字（取自稀有度的颜色）/ 激活标记都在内容层里画
+            _slotButtons[i].GetNodeOrNull<QuickSlotView>(QuickSlotName)?.ShowItem(item, selected, empty);
         }
 
         RefreshBag();
@@ -404,8 +459,8 @@ public partial class EquipmentPanel : CanvasLayer
 
         int sections = 0;
 
-        // ① 基础口袋
-        sections += AddPocketSection("基础口袋", _player.Pocket);
+        // ① 基础口袋（标题只写"口袋"，不报格数与尺寸——格子自己看得见）
+        sections += AddPocketSection("口袋", _player.Pocket);
 
         // ② 各装备容器
         for (int i = 0; i < _player.Equipment.SlotCount; i++)
@@ -418,10 +473,8 @@ public partial class EquipmentPanel : CanvasLayer
 
         if (sections == 0) _bagList.AddChild(MakeCaptionRow("（什么都没带）"));
 
-        // 合计两行：总占格（不含装备栏物品自身）/ 总负重（含装备栏）
-        _bagTotal.Text =
-            $"占用格子 {_player.TotalUsedCells} / {_player.TotalCellCapacity} 格\n" +
-            $"总负重   {_player.TotalWeight:0.00} / {_player.MaxCarryWeight:0.00} kg";
+        // 只留一行紧凑负重：占总格数交给格子自己表达
+        _bagTotal.Text = $"负重  {_player.TotalWeight:0.0} / {_player.MaxCarryWeight:0.0} kg";
     }
 
     /// <summary>列出一个口袋：小标题 + 格子面板（+ 正在拆的那一叠的滑块行）。返回是否有内容可显示。</summary>
@@ -431,22 +484,23 @@ public partial class EquipmentPanel : CanvasLayer
 
         var header = new Label
         {
-            Text = $"{name}      {pocket.UsedCells} / {pocket.CellCount} 格  {pocket.GridW}×{pocket.GridH}",
+            // 只写区块名：不报数、不加 `■` 之类的方块装饰
+            Text = name,
             VerticalAlignment = VerticalAlignment.Center,
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         header.AddThemeFontSizeOverride("font_size", 15);
-        header.AddThemeColorOverride("font_color", UiStyle.CaptionColor);
+        header.AddThemeColorOverride("font_color", UiStyle.AmberHeader);
         _bagList.AddChild(header);
 
         var grid = new GridPanel
         {
             Pocket = pocket,
-            CellPx = 40,
+            CellPx = UiMetrics.CellPx,
             Changed = Refresh,
             ContextRequested = OnGridContextRequested,
             Activated = OnGridActivated,
-            SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin,
+            SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
         };
         _bagList.AddChild(grid);
         grid.Rebuild();
@@ -625,7 +679,7 @@ public partial class EquipmentPanel : CanvasLayer
     /// </summary>
     private void ApplyPanelLayout()
     {
-        if (_root != null) _root.AnchorRight = Searching ? 0.97f : 0.66f;
+        if (_root != null) _root.AnchorRight = Searching ? 0.98f : UiMetrics.PanelAnchorRight;
         if (_searchColumn != null) _searchColumn.Visible = Searching;
     }
 
@@ -645,13 +699,8 @@ public partial class EquipmentPanel : CanvasLayer
         columns.AddChild(_searchColumn);
 
         var panel = new PanelContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
-        panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
-        {
-            BgColor = new Color(0.11f, 0.09f, 0.15f, 0.92f),   // 略带紫，呼应尸体的紫色
-            BorderColor = new Color(0.42f, 0.30f, 0.58f, 1.0f),
-            BorderWidthTop = 2, BorderWidthBottom = 2,
-            BorderWidthLeft = 2, BorderWidthRight = 2,
-        });
+        // ★ 皮肤统一走 UiStyle（末日黑钢框 + 琥珀铆钉），别再手写 StyleBoxFlat
+        panel.AddThemeStyleboxOverride("panel", UiStyle.PanelRegion());
         _searchColumn.AddChild(panel);
 
         var margin = new MarginContainer();
@@ -667,7 +716,7 @@ public partial class EquipmentPanel : CanvasLayer
 
         var title = new Label { Text = "正在搜索" };
         title.AddThemeFontSizeOverride("font_size", 22);
-        title.AddThemeColorOverride("font_color", new Color(0.78f, 0.72f, 0.88f));
+        title.AddThemeColorOverride("font_color", UiStyle.AmberHeader);
         box.AddChild(title);
 
         // ★ 没有"整箱总进度条"：每件物品的格子自己显示搜到哪了（从下往上填的紫色底纹）
@@ -710,7 +759,7 @@ public partial class EquipmentPanel : CanvasLayer
         var grid = new GridPanel
         {
             Pocket = _searchSpot.Contents,
-            CellPx = 40,
+            CellPx = UiMetrics.CellPx,
             IsRevealed = IsRevealed,
             RevealProgress = RevealProgressOf,
             Changed = Refresh,
@@ -859,3 +908,9 @@ public partial class EquipmentPanel : CanvasLayer
         return label;
     }
 }
+
+
+
+
+
+

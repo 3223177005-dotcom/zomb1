@@ -35,3 +35,7 @@ desktop.ini
 
 # ===== 本地日志 =====
 *.log
+
+# ===== Git 合并冲突残留（.ours/.theirs 变体，不提交）=====
+*.ours.png
+*.theirs.png

@@ -12,10 +12,10 @@ using Godot;
 public static class ItemRow
 {
     /// <summary>物品图标显示边长（像素）。必须等于图标源尺寸（32），否则最近邻放大/缩小时像素块大小不一。</summary>
-    public const float IconSize = 32.0f;
+    public const float IconSize = UiMetrics.ItemIconPx;
 
     /// <summary>一行的高度。</summary>
-    public const float RowHeight = 38.0f;
+    public const float RowHeight = UiMetrics.RowHeight;
 
     /// <summary>树里缩进一层的像素数。</summary>
     public const float IndentStep = 12.0f;
@@ -57,7 +57,7 @@ public static class ItemRow
             ClipText = true,
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
-        name.AddThemeFontSizeOverride("font_size", 17);
+        name.AddThemeFontSizeOverride("font_size", UiMetrics.FontBody);
         name.AddThemeColorOverride("font_color",
             dimmed ? UiStyle.ItemTextDimmed(row.Data) : UiStyle.ItemText(row.Data));
         box.AddChild(name);
@@ -71,7 +71,7 @@ public static class ItemRow
                 VerticalAlignment = VerticalAlignment.Center,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
             };
-            noteLabel.AddThemeFontSizeOverride("font_size", 15);
+            noteLabel.AddThemeFontSizeOverride("font_size", UiMetrics.FontSmall);
             noteLabel.AddThemeColorOverride("font_color", UiStyle.CaptionColor);
             box.AddChild(noteLabel);
         }
@@ -118,7 +118,7 @@ public static class ItemRow
             CustomMinimumSize = new Vector2(width, 0),
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
-        label.AddThemeFontSizeOverride("font_size", 14);
+        label.AddThemeFontSizeOverride("font_size", UiMetrics.FontTiny);
         label.AddThemeColorOverride("font_color", UiStyle.CaptionColor);
         return label;
     }

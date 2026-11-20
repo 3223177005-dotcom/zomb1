@@ -25,13 +25,14 @@ public partial class GridPanel : Control
     /// <summary>格子四周留白（像素）。</summary>
     public const int Pad = 4;
 
-    private static readonly Color BgColor = new(0.05f, 0.06f, 0.08f, 0.85f);
-    private static readonly Color CellColor = new(0.11f, 0.12f, 0.15f, 0.95f);
-    private static readonly Color CellBorder = new(0.20f, 0.22f, 0.27f, 1.0f);
-    private static readonly Color OkFill = new(0.28f, 0.85f, 0.45f, 0.30f);
-    private static readonly Color OkLine = new(0.35f, 0.95f, 0.55f, 0.95f);
-    private static readonly Color BadFill = new(0.95f, 0.30f, 0.30f, 0.28f);
-    private static readonly Color BadLine = new(1.0f, 0.40f, 0.40f, 0.95f);
+    private static readonly Color BgColor = new(0.58f, 0.53f, 0.45f, 0.96f);
+    private static readonly Color CellColor = new(0.81f, 0.77f, 0.68f, 0.98f);
+    private static readonly Color CellBevelTop = new(0.68f, 0.63f, 0.54f, 1.0f);
+    private static readonly Color CellBorder = new(0.45f, 0.40f, 0.32f, 1.0f);
+    private static readonly Color OkFill = new(0.28f, 0.56f, 0.22f, 0.30f);
+    private static readonly Color OkLine = new(0.22f, 0.48f, 0.18f, 0.95f);
+    private static readonly Color BadFill = new(0.72f, 0.20f, 0.16f, 0.30f);
+    private static readonly Color BadLine = new(0.64f, 0.16f, 0.12f, 0.95f);
 
     private readonly List<GridItemBlock> _blocks = new();
 
@@ -50,7 +51,7 @@ public partial class GridPanel : Control
     public Inventory Pocket { get; set; }
 
     /// <summary>一格多少像素。</summary>
-    public int CellPx { get; set; } = 40;
+    public int CellPx { get; set; } = UiMetrics.CellPx;
 
     /// <summary>内容变了（拖放成功）后回调，通常指向面板的 Refresh。</summary>
     public System.Action Changed { get; set; }
@@ -162,6 +163,8 @@ public partial class GridPanel : Control
             {
                 var rect = new Rect2(Pad + x * cell + 1, Pad + y * cell + 1, cell - 2, cell - 2);
                 DrawRect(rect, CellColor, true);
+                // 像素内凹阴影边 + 废土旧金属框（不再画四角小方块铆点，纯色块更干净）
+                DrawRect(new Rect2(rect.Position + Vector2.One, rect.Size - Vector2.One * 2), CellBevelTop, false, 1);
                 DrawRect(rect, CellBorder, false, 1);
             }
         }

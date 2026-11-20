@@ -5,8 +5,14 @@ public partial class MainMenu : Control
 {
     public override void _Ready()
     {
-        GetNode<Button>("Center/StartButton").Pressed += OnStartPressed;
-        GetNode<Button>("Center/QuitButton").Pressed += OnQuitPressed;
+        var start = GetNode<Button>("Center/StartButton");
+        var quit = GetNode<Button>("Center/QuitButton");
+        var title = GetNodeOrNull<Label>("Center/Title");
+        title?.AddThemeColorOverride("font_color", UiStyle.AmberHeader);
+        UiStyle.StylePixelButton(start);
+        UiStyle.StylePixelButton(quit);
+        start.Pressed += OnStartPressed;
+        quit.Pressed += OnQuitPressed;
     }
 
     private void OnStartPressed() => SceneManager.Instance.GotoGame();
