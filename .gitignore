@@ -39,3 +39,6 @@ desktop.ini
 # ===== Git 合并冲突残留（.ours/.theirs 变体，不提交）=====
 *.ours.png
 *.theirs.png
+
+# ===== 发版附件（走 GitHub Release，不进仓库）=====
+dist/
